@@ -144,13 +144,13 @@ if ($this->session->status !== ('Logged')) {
         </li>
       <?php endif; ?>
 
-      <li class="nav-item <?php if ($page == 'Profile') {
+      <!-- <li class="nav-item <?php if ($page == 'Profile') {
                             echo 'active';
                           } ?>">
         <a class="nav-link" href="<?= base_url('Profile'); ?>">
           <i class="fas fa-fw fa-user"></i>
           <span>Data Profil</span></a>
-      </li>
+      </li> -->
 
       <!-- Divider -->
       <hr class="sidebar-divider d-none d-md-block">
