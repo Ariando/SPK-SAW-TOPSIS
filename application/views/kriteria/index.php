@@ -29,6 +29,8 @@
 				</thead>
 				<tbody>
 					<?php
+
+					// var_dump(count($list));
 						$no=1;
 						foreach ($list as $data => $value) {
 					?>

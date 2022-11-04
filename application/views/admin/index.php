@@ -13,37 +13,39 @@
             Selamat datang <span class="text-uppercase"><b><?= $this->session->username; ?>!</b></span> Anda bisa mengoperasikan sistem dengan wewenang tertentu melalui pilihan menu di bawah.
         </div>
 
-        <!-- <div class="row">
-            <div class="col-xl-12 col-md-6 mb-4">
-                <div class="card border-left-info shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h5 mb-0 font-weight-bold text-gray-800 text-center">PERBANDINGAN <br> MULTI-ATTRIBUTE DECISION MAKING <br> UNTUK SELEKSI KELAYAKAN PROPOSAL SKRIPSI</div>
-                            </div>
-                        </div>
-                        <div class="row no-gutters justify-content-center mt-4">
-                            <img src="<?= base_url('assets/') ?>img/logo-akprind.png" class="img-responsive" width="200px" height="auto">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> -->
-
         <!-- Menu Tombol Dashboard -->
         <div class="row" style="height: 200px; ;">
+
             <div class="col-xl-4 col-md-6 mb-4">
                 <div class="card border-left-info shadow h-100 py-2">
                     <div class="card-body mx-0">
-                        <div class="row no-gutters align-items-center justify-content-center">
+                        <div class="row no-gutters align-items-center justify-content-between">
                             <div class="col-auto">
-                                <i class="fas fa-cube fa-2x text-gray-800"></i>
-                            </div>
-                            <div class="col ml-2">
-                                <div class="h5 mb-0 font-weight-bold text-gray-800"><a href="<?= base_url('Kriteria'); ?>" class="text-secondary text-decoration-none">Data Kriteria</a></div>
+                                <i class="fas fa-cube fa-8x text-info"></i>
                             </div>
                             <div class="col-auto">
-                                <div class="h2 mb-0 font-weight-bolder text-black-50">5</div>
+                                <div class="h1 mb-0 font-weight-bolder text-black-100">
+                                    <h1 class="font-weight-bolder display-1 text-center">
+                                <?php
+                                        $mysqli = new mysqli("localhost","root","","spk_saw_topsis_ci");
+                                        // Check connection
+                                        if ($mysqli -> connect_errno) {
+                                        echo "Failed to connect to MySQL: " . $mysqli -> connect_error;
+                                        exit();
+                                        }
+                                        // Perform query
+                                        if ($result = $mysqli -> query("SELECT * FROM kriteria")) {
+                                        echo $result -> num_rows;
+                                        // Free result set
+                                        $result -> free_result();
+                                        }
+                                        $mysqli -> close();
+                                ?>
+                                    </h1>
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-center">
+                                    <a href="<?= base_url('Kriteria'); ?> " class="text-info text-decoration-none">Jumlah Kriteria</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -53,12 +55,37 @@
             <div class="col-xl-4 col-md-6 mb-4">
                 <div class="card border-left-primary shadow h-100 py-2">
                     <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h5 mb-0 font-weight-bold text-gray-800"><a href="<?= base_url('Sub_Kriteria'); ?>" class="text-secondary text-decoration-none">Data Sub Kriteria</a></div>
+                        <div class="row no-gutters align-items-center justify-content-between">
+                        <div class="col-auto">
+                                <i class="fas fa-cubes fa-8x text-primary"></i>
                             </div>
-                            <div class="col-auto">
-                                <i class="fas fa-cubes fa-2x text-gray-800"></i>
+                        <div class="col-auto">
+                            <div class="h1 mb-0 font-weight-bolder text-black-100">
+                            <h1 class="font-weight-bolder display-1 text-center">
+                            <?php
+                                        $mysqli = new mysqli("localhost","root","","spk_saw_topsis_ci");
+
+                                        // Check connection
+                                        if ($mysqli -> connect_errno) {
+                                        echo "Failed to connect to MySQL: " . $mysqli -> connect_error;
+                                        exit();
+                                        }
+
+                                        // Perform query
+                                        if ($result = $mysqli -> query("SELECT * FROM sub_kriteria")) {
+                                        echo $result -> num_rows;
+                                        // Free result set
+                                        $result -> free_result();
+                                        }
+
+                                        $mysqli -> close();
+                                ?>
+                            </h1>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><a href="<?= base_url('Sub_Kriteria'); ?>" class="text-primary text-decoration-none">Jumlah Subkriteria</a>
+                            </div>
+                            </div>
+
+                            
                             </div>
                         </div>
                     </div>
@@ -68,64 +95,42 @@
             <div class="col-xl-4 col-md-6 mb-4">
                 <div class="card border-left-success shadow h-100 py-2">
                     <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h5 mb-0 font-weight-bold text-gray-800"><a href="<?= base_url('Alternatif'); ?>" class="text-secondary text-decoration-none">Data Alternatif</a></div>
+                        <div class="row no-gutters align-items-center justify-content-between">
+                            <div class="col-auto">
+                                <i class="fas fa-users  fa-8x text-success"></i>
                             </div>
                             <div class="col-auto">
-                                <i class="fas fa-users fa-2x text-gray-800"></i>
+                                <div class="h1 mb-0 font-weight-bolder text-black-100">
+                                <h1 class="font-weight-bolder display-1 text-center">
+                                <?php
+                                        $mysqli = new mysqli("localhost","root","","spk_saw_topsis_ci");
+
+                                        // Check connection
+                                        if ($mysqli -> connect_errno) {
+                                        echo "Failed to connect to MySQL: " . $mysqli -> connect_error;
+                                        exit();
+                                        }
+
+                                        // Perform query
+                                        if ($result = $mysqli -> query("SELECT * FROM alternatif")) {
+                                        echo $result -> num_rows;
+                                        // Free result set
+                                        $result -> free_result();
+                                        }
+
+                                        $mysqli -> close();
+                                ?>
+                                </h1>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                    <a href="<?= base_url('Alternatif'); ?>" class="text-success text-decoration-none">Jumlah Proposal</a>
+                                </div>
+                                </div>
+                            </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- <div class="col-xl-4 col-md-6 mb-4">
-                <div class="card border-left-secondary shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h5 mb-0 font-weight-bold text-gray-800"><a href="<?= base_url('Penilaian'); ?>" class="text-secondary text-decoration-none">Data Penilaian</a></div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-edit fa-2x text-gray-800"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
-
-            <!-- <div class="col-xl-4 col-md-6 mb-4">
-                <div class="card border-left-warning shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h5 mb-0 font-weight-bold text-gray-800"><a href="<?= base_url('Perhitungan'); ?>" class="text-secondary text-decoration-none">Data<br>Perhitungan</a></div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-calculator fa-2x text-gray-800"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
-
-            <!-- <div class="col-xl-4 col-md-6 mb-4">
-                <div class="card border-left-danger shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h5 mb-0 font-weight-bold text-gray-800"><a href="<?= base_url('Perhitungan/hasil'); ?>" class="text-secondary text-decoration-none">Data Hasil Akhir</a></div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-chart-area fa-2x text-gray-800"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> -->
-
         </div>
     <?php endif; ?>
     <?php if ($this->session->userdata('id_user_level') == '2') : ?>
