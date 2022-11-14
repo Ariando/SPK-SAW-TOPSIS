@@ -11,7 +11,7 @@
 		<div class="card shadow mb-4">
 			<!-- /.card-header -->
 			<div class="card-header py-3">
-				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Hasil Akhir Perankingan SAW</h6>
+				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Hasil Akhir SAW</h6>
 			</div>
 
 			<div class="card-body">
@@ -53,7 +53,7 @@
 		<div class="card shadow mb-4">
 			<!-- /.card-header -->
 			<div class="card-header py-3">
-				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Hasil Akhir Perankingan WP</h6>
+				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Hasil Akhir WP</h6>
 			</div>
 
 			<div class="card-body">
@@ -95,7 +95,7 @@
 		<div class="card shadow mb-4">
 			<!-- /.card-header -->
 			<div class="card-header py-3">
-				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Hasil Akhir Perankingan TOPSIS</h6>
+				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Hasil Akhir TOPSIS</h6>
 			</div>
 
 			<div class="card-body">

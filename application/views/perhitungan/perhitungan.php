@@ -86,7 +86,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-danger text-white">
 							<tr align="center">
 								<th width="5%" rowspan="2">No</th>
-								<th>Nama Alternatif</th>
+								<th width="30%">Judul Proposal</th>
 								<?php foreach ($kriteria as $key) : ?>
 									<th><?= $key->kode_kriteria ?></th>
 								<?php endforeach ?>
@@ -164,7 +164,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-danger text-white">
 							<tr align="center">
 								<th width="5%" rowspan="2">No</th>
-								<th>Nama Alternatif</th>
+								<th width="30%">Nama Alternatif</th>
 								<?php foreach ($kriteria as $key) : ?>
 									<th><?= $key->kode_kriteria ?></th>
 								<?php endforeach ?>
