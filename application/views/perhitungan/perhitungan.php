@@ -118,6 +118,39 @@ if (isset($_POST['hitung'])) {
 			</div>
 		</div>
 
+<!-- Bobot Kriteria W -->
+		<div class="card shadow mb-4">
+			<!-- /.card-header -->
+			<div class="card-header py-3">
+				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Bobot Kriteria (W)</h6>
+			</div>
+
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-bordered" width="100%" cellspacing="0">
+						<thead class="bg-danger text-white">
+							<tr align="center">
+								<?php foreach ($kriteria as $key) : ?>
+									<th><?= $key->kode_kriteria ?> (<?= $key->jenis ?>)</th>
+								<?php endforeach ?>
+							</tr>
+						</thead>
+						<tbody>
+							<tr align="center">
+								<?php foreach ($kriteria as $key) : ?>
+									<td>
+										<?php
+										echo $key->bobot;
+										?>
+									</td>
+								<?php endforeach ?>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
 		<!-- Matriks Ternormalisasi R -->
 		<div class="card shadow mb-4">
 			<!-- /.card-header -->
@@ -167,38 +200,7 @@ if (isset($_POST['hitung'])) {
 			</div>
 		</div>
 
-		<!-- Bobot Kriteria W -->
-		<div class="card shadow mb-4">
-			<!-- /.card-header -->
-			<div class="card-header py-3">
-				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Bobot Kriteria (W)</h6>
-			</div>
-
-			<div class="card-body">
-				<div class="table-responsive">
-					<table class="table table-bordered" width="100%" cellspacing="0">
-						<thead class="bg-danger text-white">
-							<tr align="center">
-								<?php foreach ($kriteria as $key) : ?>
-									<th><?= $key->kode_kriteria ?> (<?= $key->jenis ?>)</th>
-								<?php endforeach ?>
-							</tr>
-						</thead>
-						<tbody>
-							<tr align="center">
-								<?php foreach ($kriteria as $key) : ?>
-									<td>
-										<?php
-										echo $key->bobot;
-										?>
-									</td>
-								<?php endforeach ?>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</div>
+		
 
 		<!-- Nilai Vi -->
 		<div class="card shadow mb-4">

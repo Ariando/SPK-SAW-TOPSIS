@@ -43,7 +43,10 @@ class Alternatif extends CI_Controller
     public function store()
     {
         $data = [
-            'nama' => $this->input->post('nama')
+            'nama' => $this->input->post('nama'),
+            'mahasiswa' => $this->input->post('mahasiswa'),
+            'nim' => $this->input->post('nim'),
+            'konsentrasi' => $this->input->post('konsentrasi')
         ];
 
         $this->form_validation->set_rules('nama', 'Nama', 'required');
