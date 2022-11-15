@@ -11,7 +11,7 @@
 <div class="card shadow mb-4">
     <!-- /.card-header -->
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Daftar Kriteria</h6>
+        <h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i>Data Kriteria</h6>
     </div>
 
     <div class="card-body">

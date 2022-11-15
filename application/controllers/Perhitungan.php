@@ -65,7 +65,10 @@ class Perhitungan extends CI_Controller
 			'page' => "Perhitungan",
 			'kriteria' => $this->Perhitungan_model->get_kriteria(),
 			'alternatif' => $this->Perhitungan_model->get_alternatif(),
-			'total_bobot' => $this->Perhitungan_model->get_sum_bobot()
+			'total_bobot' => $this->Perhitungan_model->get_sum_bobot(),
+			'hasil_saw' => $this->Perhitungan_model->get_hasil_saw(),
+			'hasil_topsis' => $this->Perhitungan_model->get_hasil_topsis(),
+			'hasil_wp' => $this->Perhitungan_model->get_hasil_wp()
 		];
 
 

@@ -2,7 +2,6 @@
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
 	<h1 class="h3 mb-0 text-gray-800"><i class="fas fa-fw fa-chart-area"></i>Hasil Akhir</h1>
-
 	<a href="<?= base_url('Laporan/cetak_laporan_hasil'); ?>" class="btn btn-primary"> <i class="fa fa-print"></i> Cetak Data </a>
 </div>
 
@@ -116,7 +115,7 @@
 									<td align="left">
 										<?php
 										$nama_alternatif = $this->Perhitungan_model->get_hasil_alternatif($keys->id_alternatif);
-										echo $nama_alternatif['nama'];
+										echo substr($nama_alternatif['nama'], 0, 30) ;
 										?>
 
 									</td>
@@ -133,10 +132,7 @@
 		</div>
 	</div>
 
-
 </div>
-
-
 
 <?php
 $this->load->view('layouts/footer_admin');

@@ -118,7 +118,7 @@ if (isset($_POST['hitung'])) {
 			</div>
 		</div>
 
-<!-- Bobot Kriteria W -->
+		<!-- Bobot Kriteria W -->
 		<div class="card shadow mb-4">
 			<!-- /.card-header -->
 			<div class="card-header py-3">
@@ -200,8 +200,6 @@ if (isset($_POST['hitung'])) {
 			</div>
 		</div>
 
-		
-
 		<!-- Nilai Vi -->
 		<div class="card shadow mb-4">
 			<!-- /.card-header -->
@@ -262,6 +260,47 @@ if (isset($_POST['hitung'])) {
 			</div>
 		</div>
 
+		<!-- Hasil Akhir SAW -->
+			<div class="card shadow mb-4">
+				<!-- /.card-header -->
+				<div class="card-header py-3">
+					<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Hasil Akhir SAW</h6>
+				</div>
+
+				<div class="card-body">
+					<div class="table-responsive">
+						<table class="table table-bordered" width="100%" cellspacing="0">
+							<thead class="bg-danger text-white">
+								<tr align="center">
+									<th width="70%">Judul Proposal</th>
+									<th width="20%">Nilai</th>
+									<th>Rank</th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php
+								$no = 1;
+								foreach ($hasil_saw as $keys) : ?>
+									<tr align="center">
+										<td align="left">
+											<?php
+											$nama_alternatif = $this->Perhitungan_model->get_hasil_alternatif($keys->id_alternatif);
+											echo substr($nama_alternatif['nama'], 0, 75);
+											?>
+										...
+										</td>
+										<td><?= round($keys->nilai, 4) ?></td>
+										<td><?= $no; ?></td>
+									</tr>
+								<?php
+									$no++;
+								endforeach ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		
 		<!-- Metode TOPSIS -->
 	<?php
 	} elseif ($_POST['metode'] == "topsis") {
@@ -709,6 +748,46 @@ if (isset($_POST['hitung'])) {
 			</div>
 		</div>
 
+		<!-- Hasil Akhir TOPSIS -->
+		<div class="card shadow mb-4">
+			<!-- /.card-header -->
+			<div class="card-header py-3">
+				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Hasil Akhir TOPSIS</h6>
+			</div>
+
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-bordered" width="100%" cellspacing="0">
+						<thead class="bg-success text-white">
+							<tr align="center">
+								<th width="70%">Judul Proposal</th>
+								<th width="20%">Nilai</th>
+								<th>Rank</th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php
+							$no = 1;
+							foreach ($hasil_topsis as $keys) : ?>
+								<tr align="center">
+									<td align="left">
+										<?php
+										$nama_alternatif = $this->Perhitungan_model->get_hasil_alternatif($keys->id_alternatif);
+										echo substr($nama_alternatif['nama'], 0, 75) ;
+										?>
+									...
+									</td>
+									<td><?= $keys->nilai ?></td>
+									<td><?= $no; ?></td>
+								</tr>
+							<?php
+								$no++;
+							endforeach ?>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
 
 		<!-- Metode WP -->
 	<?php
@@ -964,6 +1043,47 @@ if (isset($_POST['hitung'])) {
 			</div>
 		</div>
 
+		<!-- Nilai Akhir WP -->
+		<div class="card shadow mb-4">
+			<!-- /.card-header -->
+			<div class="card-header py-3">
+				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Hasil Akhir WP</h6>
+			</div>
+
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-bordered" width="100%" cellspacing="0">
+						<thead class="bg-info text-white">
+							<tr align="center">
+								<th width="70%">Judul Proposal</th>
+								<th width="20%">Nilai</th>
+								<th>Rank</th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php
+							$no = 1;
+							foreach ($hasil_wp as $keys) : ?>
+								<tr align="center">
+									<td align="left">
+										<?php
+										$nama_alternatif = $this->Perhitungan_model->get_hasil_alternatif($keys->id_alternatif);
+										echo substr($nama_alternatif['nama'], 0, 75);
+										?>
+
+									</td>
+									<td><?= round($keys->nilai, 4) ?></td>
+									<td><?= $no; ?></td>
+								</tr>
+							<?php
+								$no++;
+							endforeach ?>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>					
 
 <?php
 	}
