@@ -395,7 +395,7 @@ if (isset($_POST['hitung'])) {
 		<div class="card shadow mb-4">
 			<!-- /.card-header -->
 			<div class="card-header py-3">
-				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Matriks Y</h6>
+				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Matriks Normalisasi V</h6>
 			</div>
 
 			<div class="card-body">
