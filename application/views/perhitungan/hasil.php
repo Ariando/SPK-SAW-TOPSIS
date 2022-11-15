@@ -19,9 +19,9 @@
 					<table class="table table-bordered" width="100%" cellspacing="0">
 						<thead class="bg-danger text-white">
 							<tr align="center">
-								<th>Alternatif</th>
-								<th>Nilai</th>
-								<th width="15%">Rank</th>
+								<th width="70%">Judul Proposal</th>
+								<th width="20%">Nilai</th>
+								<th>Rank</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -61,9 +61,9 @@
 					<table class="table table-bordered" width="100%" cellspacing="0">
 						<thead class="bg-info text-white">
 							<tr align="center">
-								<th>Alternatif</th>
-								<th>Nilai</th>
-								<th width="15%">Rank</th>
+								<th width="70%">Judul Proposal</th>
+								<th width="20%">Nilai</th>
+								<th>Rank</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -103,9 +103,9 @@
 					<table class="table table-bordered" width="100%" cellspacing="0">
 						<thead class="bg-success text-white">
 							<tr align="center">
-								<th>Alternatif</th>
-								<th>Nilai</th>
-								<th width="15%">Rank</th>
+								<th width="70%">Judul Proposal</th>
+								<th width="20%">Nilai</th>
+								<th>Rank</th>
 							</tr>
 						</thead>
 						<tbody>
