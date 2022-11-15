@@ -35,9 +35,9 @@
 					<option value="Software Engineering" <?php if ($alternatif->konsentrasi == "Software Engineering") {
 																echo 'selected';
 															} ?>>Software Engineering</option>
-					<option value="Security" <?php if ($alternatif->konsentrasi == "Security") {
+					<option value="Security And Network" <?php if ($alternatif->konsentrasi == "Security And Network") {
 													echo 'selected';
-												} ?>>Security</option>
+												} ?>>Security And Network</option>
 					<option value="Soft Computing" <?php if ($alternatif->konsentrasi == "Soft Computing") {
 														echo 'selected';
 													} ?>>Soft Computing</option>

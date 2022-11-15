@@ -164,7 +164,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-danger text-white">
 							<tr align="center">
 								<th width="5%" rowspan="2">No</th>
-								<th width="30%">Nama Alternatif</th>
+								<th width="30%">Judul Proposal</th>
 								<?php foreach ($kriteria as $key) : ?>
 									<th><?= $key->kode_kriteria ?></th>
 								<?php endforeach ?>
@@ -215,7 +215,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-danger text-white">
 							<tr align="center">
 								<th width="5%">No</th>
-								<th>Nama Alternatif</th>
+								<th width="50%">Judul Proposal</th>
 								<th width="15%">Nilai Vi</th>
 							</tr>
 						</thead>
@@ -280,7 +280,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-success text-white">
 							<tr align="center">
 								<th width="5%">No</th>
-								<th>Nama</th>
+								<th width="30%">Judul Proposal</th>
 								<?php foreach ($kriteria as $key) : ?>
 									<th><?= $key->kode_kriteria ?></th>
 								<?php endforeach ?>
@@ -358,7 +358,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-success text-white">
 							<tr align="center">
 								<th width="5%">No</th>
-								<th>Nama</th>
+								<th width="30%">Judul Proposal</th>
 								<?php foreach ($kriteria as $key) : ?>
 									<th><?= $key->kode_kriteria ?></th>
 								<?php endforeach ?>
@@ -404,7 +404,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-success text-white">
 							<tr align="center">
 								<th width="5%">No</th>
-								<th>Nama</th>
+								<th width="30%">Judul Proposal</th>
 								<?php foreach ($kriteria as $key) : ?>
 									<th><?= $key->kode_kriteria ?></th>
 								<?php endforeach ?>
@@ -529,7 +529,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-success text-white">
 							<tr align="center">
 								<th width="5%">No</th>
-								<th>Nama</th>
+								<th>Judul Proposal</th>
 								<th width="30%">Jarak Ideal Positif</th>
 							</tr>
 						</thead>
@@ -577,7 +577,7 @@ if (isset($_POST['hitung'])) {
 		<div class="card shadow mb-4">
 			<!-- /.card-header -->
 			<div class="card-header py-3">
-				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Jarak Ideal Negatis (S<sub>i</sub><sup>-</sup>)</h6>
+				<h6 class="m-0 font-weight-bold text-dark"><i class="fa fa-table"></i> Jarak Ideal Negatif (S<sub>i</sub><sup>-</sup>)</h6>
 			</div>
 
 			<div class="card-body">
@@ -586,7 +586,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-success text-white">
 							<tr align="center">
 								<th width="5%">No</th>
-								<th>Nama</th>
+								<th>Judul Proposal</th>
 								<th width="30%">Jarak Ideal Negatif</th>
 							</tr>
 						</thead>
@@ -643,7 +643,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-success text-white">
 							<tr align="center">
 								<th width="5%">No</th>
-								<th>Nama</th>
+								<th>Judul Proposal</th>
 								<th width="30%">Nilai</th>
 							</tr>
 						</thead>
@@ -726,7 +726,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-info text-white">
 							<tr align="center">
 								<th width="5%">No</th>
-								<th>Nama</th>
+								<th width="40%">Judul Proposal</th>
 								<?php foreach ($kriteria as $key) : ?>
 									<th><?= $key->kode_kriteria ?></th>
 								<?php endforeach ?>
@@ -845,7 +845,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="text-white bg-info">
 							<tr align="center">
 								<th width="5%" rowspan="2">No</th>
-								<th width="20%" rowspan="2">Nama</th>
+								<th width="30%" rowspan="2">Judul Proposal</th>
 								<th colspan="5">
 									Kriteria
 								</th>
@@ -917,7 +917,7 @@ if (isset($_POST['hitung'])) {
 						<thead class="bg-info text-white">
 							<tr align="center">
 								<th width="5%">No</th>
-								<th>Nama Alternatif</th>
+								<th width="50%">Judul Proposal</th>
 								<th>Perhitungan</th>
 								<th width="15%">Nilai (V)</th>
 							</tr>

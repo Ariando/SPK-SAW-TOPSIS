@@ -35,7 +35,7 @@
 				<select name="konsentrasi" class="form-control" required>
 					<option value="">--Pilih Konsentrasi--</option>
 					<option value="Software Engineering">Software Engineering</option>
-					<option value="Security">Security</option>
+					<option value="Security And Network">Security And Network</option>
 					<option value="Soft Computing">Soft Computing</option>
 
 				</select>
