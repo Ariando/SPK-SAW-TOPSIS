@@ -1070,7 +1070,7 @@ if (isset($_POST['hitung'])) {
 										$nama_alternatif = $this->Perhitungan_model->get_hasil_alternatif($keys->id_alternatif);
 										echo substr($nama_alternatif['nama'], 0, 75);
 										?>
-
+									...
 									</td>
 									<td><?= round($keys->nilai, 4) ?></td>
 									<td><?= $no; ?></td>
