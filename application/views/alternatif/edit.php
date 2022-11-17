@@ -18,6 +18,10 @@
 		<div class="row">
 			<?php echo form_hidden('id_alternatif', $alternatif->id_alternatif) ?>
 			<div class="form-group col-md-12">
+				<label class="font-weight-bold">Kode</label>
+				<input autocomplete="off" type="text" name="kode" value="<?php echo $alternatif->kode ?>" required class="form-control" />
+			</div>
+			<div class="form-group col-md-12">
 				<label class="font-weight-bold">Judul</label>
 				<input autocomplete="off" type="text" name="nama" value="<?php echo $alternatif->nama ?>" required class="form-control" />
 			</div>

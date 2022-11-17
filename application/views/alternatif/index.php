@@ -20,6 +20,7 @@
 				<thead class="bg-dark text-white">
 					<tr align="center">
 						<th width="5%">No</th>
+						<th>Kode</th>
 						<th>Judul</th>
 						<th>Nama Mahasiswa</th>
 						<th>NIM</th>
@@ -34,6 +35,7 @@
 					?>
 						<tr align="center">
 							<td><?= $no ?></td>
+							<td align="left"><?php echo $value->kode ?></td>
 							<td align="left"><?php echo $value->nama ?></td>
 							<td align="left"><?php echo $value->mahasiswa ?></td>
 							<td align="left"><?php echo $value->nim ?></td>

@@ -31,7 +31,7 @@
 									<td align="left">
 										<?php
 										$nama_alternatif = $this->Perhitungan_model->get_hasil_alternatif($keys->id_alternatif);
-										echo $nama_alternatif['nama'];
+										echo substr($nama_alternatif['nama'], 0, 30) ;
 										?>
 
 									</td>
@@ -73,7 +73,7 @@
 									<td align="left">
 										<?php
 										$nama_alternatif = $this->Perhitungan_model->get_hasil_alternatif($keys->id_alternatif);
-										echo $nama_alternatif['nama'];
+										echo substr($nama_alternatif['nama'], 0, 30) ;
 										?>
 
 									</td>

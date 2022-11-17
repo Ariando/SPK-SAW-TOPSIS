@@ -32,6 +32,7 @@ class Alternatif_model extends CI_Model
     public function update($id_alternatif, $data = [])
     {
         $ubah = array(
+            'kode' => $data['kode'],
             'nama'  => $data['nama'],
             'mahasiswa' => $data['mahasiswa'],
             'nim' => $data['nim'],

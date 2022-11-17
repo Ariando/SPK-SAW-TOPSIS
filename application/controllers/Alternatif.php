@@ -43,6 +43,7 @@ class Alternatif extends CI_Controller
     public function store()
     {
         $data = [
+            'kode' => $this->input->post('kode'),
             'nama' => $this->input->post('nama'),
             'mahasiswa' => $this->input->post('mahasiswa'),
             'nim' => $this->input->post('nim'),
@@ -77,6 +78,7 @@ class Alternatif extends CI_Controller
     {
         $id_alternatif = $this->input->post('id_alternatif');
         $data = array(
+            'kode' => $this->input->post('kode'),
             'nama' => $this->input->post('nama'),
             'mahasiswa' => $this->input->post('mahasiswa'),
             'nim' => $this->input->post('nim'),
