@@ -22,7 +22,7 @@
 	<table border="1" width="100%">
 		<thead>
 			<tr align="center">
-				<th>Alternatif</th>
+				<th>Judul Proposal Skripsi</th>
 				<th>Nilai</th>
 				<th width="15%">Rank</th>
 			</tr>
@@ -53,7 +53,7 @@
 	<table border="1" width="100%">
 		<thead>
 			<tr align="center">
-				<th>Alternatif</th>
+				<th>Judul Proposal Skripsi</th>
 				<th>Nilai</th>
 				<th width="15%">Rank</th>
 			</tr>
@@ -84,7 +84,7 @@
 	<table border="1" width="100%">
 		<thead>
 			<tr align="center">
-				<th>Alternatif</th>
+			<th>Judul Proposal Skripsi</th>
 				<th>Nilai</th>
 				<th width="15%">Rank</th>
 			</tr>
