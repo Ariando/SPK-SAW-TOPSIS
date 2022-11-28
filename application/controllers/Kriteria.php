@@ -25,7 +25,6 @@
         {
             $data['page'] = "Kriteria";
 			$data['list'] = $this->Kriteria_model->tampil();
-            // $data = "SELECT * FROM kriteria";
             $this->load->view('kriteria/index', $data);
         }
         
