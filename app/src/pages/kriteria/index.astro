@@ -1,0 +1,110 @@
+---
+import App from '../../layouts/App.astro';
+import { criteriaWithRubrics } from '../../lib/queries';
+import { formatNumber } from '../../lib/format';
+import { actions } from 'astro:actions';
+
+const user = Astro.locals.user!;
+const canEdit = user.role === 'admin';
+const list = await criteriaWithRubrics();
+
+const total = list.reduce((s, c) => s + Number(c.weight), 0);
+const totalOff = Math.abs(total - 1) > 1e-6;
+
+const savedAction = Astro.getActionResult(actions.criteria.save);
+const removedAction = Astro.getActionResult(actions.criteria.remove);
+const normalizedAction = Astro.getActionResult(actions.criteria.normalizeWeights);
+const actionError = savedAction?.error ?? removedAction?.error ?? normalizedAction?.error;
+---
+
+<App title="Kriteria" page="Kriteria" lead="Setiap kriteria punya bobot dan arah. Total bobot diperiksa sebelum perhitungan.">
+  <Fragment slot="actions">
+    {canEdit && <a class="button button--primary" href="/kriteria/baru">Tambah kriteria</a>}
+  </Fragment>
+
+  <div class="stack">
+    {savedAction?.data && <div class="notice notice--success" role="status">Kriteria disimpan.</div>}
+    {removedAction?.data && <div class="notice notice--success" role="status">Kriteria dihapus.</div>}
+    {normalizedAction?.data && <div class="notice notice--success" role="status">Bobot dinormalisasi sehingga totalnya 1.</div>}
+    {actionError && (
+      <div class="notice notice--error" role="alert">
+        <span class="notice__title">Perubahan tidak tersimpan</span>
+        {actionError.message}
+      </div>
+    )}
+
+    <div class:list={['notice', totalOff ? 'notice--warning' : 'notice--info']} role="status">
+      <span class="notice__title">Total bobot {formatNumber(total, 2)}</span>
+      {totalOff
+        ? 'Total bobot bukan 1. Perhitungan tetap berjalan dengan bobot ternormalisasi, tetapi sebaiknya diperbaiki.'
+        : 'Total bobot sudah 1. Nilai akan dipakai apa adanya.'}
+      {canEdit && totalOff && list.length > 0 && (
+        <form method="post" action={actions.criteria.normalizeWeights} class="mt-4">
+          <button class="button" type="submit">Normalisasi bobot</button>
+        </form>
+      )}
+    </div>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Daftar kriteria</h2>
+        <p class="panel__meta">{list.length} kriteria</p>
+      </div>
+
+      {list.length === 0 ? (
+        <div class="empty-state">
+          <p class="empty-state__title">Belum ada kriteria</p>
+          <p class="empty-state__body">Kriteria dibutuhkan sebelum penilaian bisa diisi dan metode dihitung.</p>
+          {canEdit && <a class="button button--primary" href="/kriteria/baru">Tambah kriteria pertama</a>}
+        </div>
+      ) : (
+        <div class="panel__body panel__body--flush">
+          <div class="table-wrap">
+            <table class="data-table">
+              <caption>Bobot ditampilkan dua desimal. Rubrik adalah bantuan pengisian nilai, bukan pengunci.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Kode</th>
+                  <th scope="col">Nama kriteria</th>
+                  <th scope="col">Arah</th>
+                  <th scope="col" class="num">Bobot</th>
+                  <th scope="col" class="num">Rubrik</th>
+                  <th scope="col"><span class="visually-hidden">Tindakan</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((c) => (
+                  <tr data-criterion-id={c.id} data-criterion-code={c.code}>
+                    <td><span class="matrix-tag">{c.code}</span></td>
+                    <td>{c.name}</td>
+                    <td>{c.direction === 'benefit' ? 'Benefit' : 'Cost'}</td>
+                    <td class="num">{formatNumber(c.weight, 2)}</td>
+                    <td class="num">{c.rubrics.length}</td>
+                    <td>
+                      <div class="cluster">
+                        {canEdit && <a class="button button--quiet" href={`/kriteria/${c.id}`}>Ubah</a>}
+                        {canEdit && (
+                          <form method="post" action={actions.criteria.remove} onsubmit="return confirm('Hapus kriteria ini beserta rubrik dan nilainya?')">
+                            <input type="hidden" name="id" value={c.id} />
+                            <button class="button button--quiet button--danger" type="submit">Hapus</button>
+                          </form>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3">Total bobot</td>
+                  <td class="num">{formatNumber(total, 2)}</td>
+                  <td colspan="2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
+  </div>
+</App>

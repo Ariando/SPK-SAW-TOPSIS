@@ -1,0 +1,93 @@
+---
+import App from '../../layouts/App.astro';
+import { db } from '../../lib/guard';
+import { user } from '../../db/schema';
+import { asc } from 'drizzle-orm';
+import { formatDateTime } from '../../lib/format';
+
+const currentUser = Astro.locals.user!;
+if (currentUser.role !== 'admin') return Astro.redirect('/dashboard', 303);
+
+const rows = await db
+  .select({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    username: user.username,
+    role: user.role,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+  })
+  .from(user)
+  .orderBy(asc(user.name));
+
+const adminCount = rows.filter((r) => r.role === 'admin' && r.isActive).length;
+const inactiveCount = rows.filter((r) => !r.isActive).length;
+---
+
+<App
+  title="Akun"
+  page="Akun"
+  lead="Daftar akun yang memiliki akses ke TELAAH. Halaman ini hanya menampilkan data, belum mengubahnya."
+>
+  <div class="stack">
+    <div class="notice notice--info" role="status">
+      <span class="notice__title">Pengelolaan akun belum tersedia di antarmuka</span>
+      Menambah akun, mengubah peran, dan menonaktifkan akun masih dilakukan langsung di database. Antarmuka
+      pengelolaan direncanakan pada iterasi berikutnya.
+    </div>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Daftar akun</h2>
+        <p class="panel__meta">{rows.length} akun, {adminCount} pengelola aktif</p>
+      </div>
+
+      {rows.length === 0 ? (
+        <div class="empty-state">
+          <p class="empty-state__title">Belum ada akun</p>
+          <p class="empty-state__body">Jalankan seed untuk membuat akun pengelola pertama.</p>
+        </div>
+      ) : (
+        <div class="panel__body panel__body--flush">
+          <div class="table-wrap">
+            <table class="data-table">
+              <caption>Peran pengelola dapat mengubah data, peran peninjau hanya membaca.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Nama</th>
+                  <th scope="col">Nama pengguna</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Peran</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Dibuat</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr data-user-id={row.id}>
+                    <td>
+                      {row.name}
+                      {row.id === currentUser.id && <span class="muted small"> (Anda)</span>}
+                    </td>
+                    <td class="nowrap">{row.username ?? '-'}</td>
+                    <td>{row.email}</td>
+                    <td>{row.role === 'admin' ? 'Pengelola' : 'Peninjau'}</td>
+                    <td>{row.isActive ? 'Aktif' : 'Nonaktif'}</td>
+                    <td class="nowrap">{formatDateTime(row.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
+
+    {inactiveCount > 0 && (
+      <div class="notice notice--warning" role="status">
+        Ada {inactiveCount} akun nonaktif. Akun nonaktif tidak bisa masuk walau kata sandinya benar.
+      </div>
+    )}
+  </div>
+</App>

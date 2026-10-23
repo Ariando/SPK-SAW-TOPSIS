@@ -1,0 +1,76 @@
+---
+import App from '../../layouts/App.astro';
+import { loadRuns } from '../../lib/runs';
+import { formatDateTime, formatNumber } from '../../lib/format';
+
+const runs = await loadRuns(100);
+const altCount = runs.length;
+---
+
+<App title="Riwayat hasil" page="Hasil" lead="Setiap penyimpanan menghasilkan satu catatan tetap. Hasil lama tetap dapat dibuka walau data master berubah.">
+  <div class="stack">
+    {runs.length === 0 ? (
+      <section class="panel">
+        <div class="empty-state">
+          <p class="empty-state__title">Belum ada hasil tersimpan</p>
+          <p class="empty-state__body">
+            Jalankan perhitungan dari halaman hitung, lalu tekan Simpan hasil untuk membuat catatan riwayat.
+          </p>
+          <a class="button button--primary" href="/hitung">Buka halaman hitung</a>
+        </div>
+      </section>
+    ) : (
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">Daftar perhitungan</h2>
+          <p class="panel__meta">{altCount} catatan</p>
+        </div>
+        <div class="panel__body panel__body--flush">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Waktu</th>
+                  <th scope="col">Metode</th>
+                  <th scope="col">Peringkat pertama</th>
+                  <th scope="col">Catatan</th>
+                  <th scope="col">Sidik snapshot</th>
+                  <th scope="col"><span class="visually-hidden">Tindakan</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.map((run) => {
+                  const snapshot = run.snapshot as {
+                    ranking?: { code: string; title: string; value: number }[];
+                  };
+                  const first = snapshot.ranking?.[0];
+                  return (
+                    <tr>
+                      <td class="nowrap">{formatDateTime(run.createdAt)}</td>
+                      <td>{run.method.toUpperCase()}</td>
+                      <td>
+                        {first ? (
+                          <>
+                            <span class="matrix-tag">{first.code}</span> {first.title}
+                            <span class="num muted small"> · {formatNumber(first.value, 4)}</span>
+                          </>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td class="muted small">{run.note ?? '-'}</td>
+                      <td><code class="small">{run.snapshotHash.slice(0, 12)}</code></td>
+                      <td>
+                        <a class="button button--quiet" href={`/hasil/${run.id}`}>Buka</a>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    )}
+  </div>
+</App>

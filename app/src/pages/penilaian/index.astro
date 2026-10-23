@@ -1,0 +1,164 @@
+---
+import App from '../../layouts/App.astro';
+import { actions } from 'astro:actions';
+import { loadCriteria, loadAlternatives, loadScoreMap } from '../../lib/queries';
+import { formatNumber } from '../../lib/format';
+
+const user = Astro.locals.user!;
+const canEdit = user.role === 'admin';
+
+const criteria = await loadCriteria();
+const alternatives = await loadAlternatives();
+const scoreMap = await loadScoreMap();
+
+const totalCells = criteria.length * alternatives.length;
+const filledCells = scoreMap.size;
+const missingCount = totalCells - filledCells;
+
+const saved = Astro.getActionResult(actions.scores.saveCell);
+const cleared = Astro.getActionResult(actions.scores.clearRow);
+const failed = saved?.error ?? cleared?.error;
+---
+
+<App
+  title="Penilaian"
+  page="Penilaian"
+  lead="Satu sel disimpan sendiri-sendiri, jadi perubahan kecil tidak menimpa nilai lain."
+>
+  <div class="stack">
+    {saved?.data && <div class="notice notice--success" role="status">Nilai tersimpan.</div>}
+    {cleared?.data && <div class="notice notice--success" role="status">Nilai baris dihapus.</div>}
+    {failed && (
+      <div class="notice notice--error" role="alert">
+        <span class="notice__title">Nilai tidak tersimpan</span>
+        {failed.message}
+      </div>
+    )}
+
+    <div class:list={['notice', missingCount > 0 ? 'notice--warning' : 'notice--info']} role="status">
+      <span class="notice__title">{filledCells} dari {totalCells} sel terisi</span>
+      {missingCount > 0
+        ? `Masih ada ${missingCount} sel kosong. Perhitungan baru bisa dijalankan setelah semua sel terisi.`
+        : 'Semua sel terisi. Perhitungan sudah bisa dijalankan.'}
+    </div>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Matriks penilaian</h2>
+        <p class="panel__meta">{alternatives.length} alternatif · {criteria.length} kriteria</p>
+      </div>
+
+      {criteria.length === 0 || alternatives.length === 0 ? (
+        <div class="empty-state">
+          <p class="empty-state__title">Data belum lengkap</p>
+          <p class="empty-state__body">Penilaian membutuhkan minimal satu kriteria dan satu alternatif.</p>
+          <div class="cluster" style="justify-content: center;">
+            <a class="button" href="/kriteria">Kelola kriteria</a>
+            <a class="button" href="/alternatif">Kelola alternatif</a>
+          </div>
+        </div>
+      ) : (
+        <div class="panel__body panel__body--flush">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Alternatif</th>
+                  {criteria.map((c) => (
+                    <th scope="col" class="num">
+                      {c.code}
+                      <span class="muted small" style="display:block; font-weight:400;">
+                        {c.direction === 'benefit' ? 'benefit' : 'cost'}
+                      </span>
+                    </th>
+                  ))}
+                  <th scope="col"><span class="visually-hidden">Tindakan</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {alternatives.map((alt) => {
+                  const filled = criteria.filter((c) => scoreMap.has(`${alt.id}:${c.id}`)).length;
+                  return (
+                    <tr data-alternative-id={alt.id}>
+                      <th scope="row" style="font-weight:600;">
+                        <span class="matrix-tag">{alt.code}</span>
+                        <span class="muted small" style="display:block; font-weight:400; margin-top:0.25rem;">
+                          {alt.title}
+                        </span>
+                        <span class="muted small" style="display:block; font-weight:400;">
+                          {filled} dari {criteria.length} terisi
+                        </span>
+                      </th>
+                      {criteria.map((c) => {
+                        const value = scoreMap.get(`${alt.id}:${c.id}`);
+                        return (
+                          <td class="num" data-criterion-id={c.id}>
+                            {canEdit ? (
+                              <form method="post" action={actions.scores.saveCell} class="inline-score">
+                                <input type="hidden" name="alternativeId" value={alt.id} />
+                                <input type="hidden" name="criterionId" value={c.id} />
+                                <input
+                                  class="input num inline-score__input"
+                                  name="value"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max="1000"
+                                  required
+                                  value={value ?? ''}
+                                  aria-label={`Nilai ${alt.code} pada ${c.code}`}
+                                />
+                                <button class="button button--quiet inline-score__button" type="submit">
+                                  Simpan
+                                </button>
+                              </form>
+                            ) : (
+                              <span>{value === undefined ? '-' : formatNumber(value, 2)}</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td>
+                        {canEdit && (
+                          <form
+                            method="post"
+                            action={actions.scores.clearRow}
+                            onsubmit="return confirm('Hapus semua nilai untuk alternatif ini?')"
+                          >
+                            <input type="hidden" name="alternativeId" value={alt.id} />
+                            <button class="button button--quiet button--danger" type="submit">Kosongkan</button>
+                          </form>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
+  </div>
+</App>
+
+<style>
+  .inline-score {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    justify-content: flex-end;
+  }
+
+  .inline-score__input {
+    width: 5.5rem;
+    min-height: 32px;
+    padding: 0.25rem 0.35rem;
+  }
+
+  .inline-score__button {
+    font-size: 0.75rem;
+    min-height: 32px;
+    padding: 0.25rem 0.5rem;
+  }
+</style>

@@ -1,0 +1,56 @@
+---
+import App from '../../layouts/App.astro';
+import ActionNotice from '../../components/ActionNotice.astro';
+import { actions } from 'astro:actions';
+
+const user = Astro.locals.user!;
+if (user.role !== 'admin') return Astro.redirect('/alternatif', 303);
+
+const result = Astro.getActionResult(actions.alternatives.save);
+---
+
+<App title="Alternatif baru" page="Alternatif" lead="Satu alternatif mewakili satu proposal skripsi yang dinilai.">
+  <div class="stack">
+    <ActionNotice error={result?.error} />
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Data alternatif</h2>
+        <a class="button button--quiet" href="/alternatif">Kembali</a>
+      </div>
+      <div class="panel__body">
+        <form method="post" action={actions.alternatives.save} class="stack">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label" for="code">Kode</label>
+              <input class="input" id="code" name="code" type="text" required maxlength="16" placeholder="A1" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="nim">NIM</label>
+              <input class="input" id="nim" name="nim" type="text" required maxlength="24" placeholder="21101001" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="title">Judul proposal</label>
+            <input class="input" id="title" name="title" type="text" required maxlength="255" placeholder="Sistem rekomendasi beasiswa berbasis profil" />
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label" for="studentName">Nama mahasiswa</label>
+              <input class="input" id="studentName" name="studentName" type="text" required maxlength="160" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="concentration">Konsentrasi</label>
+              <input class="input" id="concentration" name="concentration" type="text" maxlength="120" />
+              <p class="field__hint">Opsional.</p>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="button button--primary" type="submit">Simpan alternatif</button>
+            <a class="button" href="/alternatif">Batal</a>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+</App>

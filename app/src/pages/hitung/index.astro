@@ -1,0 +1,111 @@
+---
+import App from '../../layouts/App.astro';
+import { loadMatrix } from '../../lib/queries';
+import { methods } from '../../lib/dss/registry';
+import { formatNumber } from '../../lib/format';
+
+const matrix = await loadMatrix(true);
+const activeMethods = methods.filter((m) => m.inputMode === 'matrix');
+
+const canCompute =
+  matrix.missing.length === 0 &&
+  matrix.input.criteria.length > 0 &&
+  matrix.input.alternatives.length >= 2;
+---
+
+<App title="Hitung" page="Hitung" lead="Pilih metode. Semua metode memakai matriks nilai yang sama, sehingga hasilnya bisa dibandingkan.">
+  <div class="stack">
+    {!canCompute && (
+      <div class="notice notice--warning" role="status">
+        <span class="notice__title">Perhitungan belum bisa dijalankan</span>
+        {matrix.missing.length > 0
+          ? `Ada ${matrix.missing.length} sel nilai yang masih kosong.`
+          : matrix.input.alternatives.length < 2
+            ? 'Perlu minimal dua alternatif aktif untuk membandingkan.'
+            : 'Data kriteria belum lengkap.'}
+        <div class="cluster mt-4">
+          <a class="button" href="/penilaian">Isi penilaian</a>
+          <a class="button button--quiet" href="/alternatif">Kelola alternatif</a>
+        </div>
+      </div>
+    )}
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Metode tersedia</h2>
+        <p class="panel__meta">{matrix.input.alternatives.length} alternatif · {matrix.input.criteria.length} kriteria</p>
+      </div>
+      <div class="panel__body">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Metode</th>
+                <th scope="col">Keterangan</th>
+                <th scope="col"><span class="visually-hidden">Tindakan</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeMethods.map((m) => (
+                <tr>
+                  <th scope="row">{m.label}</th>
+                  <td class="muted small">
+                    {m.id === 'saw' && 'Normalisasi proporsional lalu penjumlahan terbobot.'}
+                    {m.id === 'wp' && 'Perkalian berpangkat dengan bobot ternormalisasi.'}
+                    {m.id === 'topsis' && 'Jarak ke solusi ideal positif dan negatif.'}
+                  </td>
+                  <td>
+                    {canCompute ? (
+                      <a class="button" href={`/hitung/${m.id}`}>Hitung {m.label}</a>
+                    ) : (
+                      <span class="muted small">Menunggu data lengkap</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Bobot yang akan dipakai</h2>
+      </div>
+      <div class="panel__body panel__body--flush">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Kriteria</th>
+                <th scope="col">Arah</th>
+                <th scope="col" class="num">Bobot asli</th>
+                <th scope="col" class="num">Bobot ternormalisasi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {matrix.input.criteria.map((c) => (
+                <tr>
+                  <td><span class="matrix-tag">{c.code}</span> {c.name}</td>
+                  <td>{c.direction === 'benefit' ? 'Benefit' : 'Cost'}</td>
+                  <td class="num">{formatNumber(c.weight, 4)}</td>
+                  <td class="num">
+                    {matrix.weightSum > 0 ? formatNumber(c.weight / matrix.weightSum, 4) : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2">Total</td>
+                <td class="num">{formatNumber(matrix.weightSum, 4)}</td>
+                <td class="num">1,0000</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</App>

@@ -1,0 +1,67 @@
+---
+import App from '../../layouts/App.astro';
+import ActionNotice from '../../components/ActionNotice.astro';
+import { actions } from 'astro:actions';
+import { db } from '../../lib/guard';
+import { alternatives } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (user.role !== 'admin') return Astro.redirect('/alternatif', 303);
+
+const id = Number(Astro.params.id);
+const [row] = await db.select().from(alternatives).where(eq(alternatives.id, id)).limit(1);
+if (!row) return Astro.redirect('/alternatif', 303);
+
+const saveResult = Astro.getActionResult(actions.alternatives.save);
+---
+
+<App title="Ubah alternatif" page="Alternatif" lead="Perubahan pada identitas tidak mengubah nilai yang sudah diisi.">
+  <div class="stack">
+    <ActionNotice success={saveResult?.data ? 'Perubahan tersimpan.' : null} error={saveResult?.error} />
+
+    <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">Data alternatif</h2>
+      <a class="button button--quiet" href="/alternatif">Kembali</a>
+    </div>
+    <div class="panel__body">
+      <form method="post" action={actions.alternatives.save} class="stack">
+        <input type="hidden" name="id" value={row.id} />
+        <div class="form-grid">
+          <div class="field">
+            <label class="field__label" for="code">Kode</label>
+            <input class="input" id="code" name="code" type="text" required maxlength="16" value={row.code} />
+          </div>
+          <div class="field">
+            <label class="field__label" for="nim">NIM</label>
+            <input class="input" id="nim" name="nim" type="text" required maxlength="24" value={row.nim} />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="title">Judul proposal</label>
+          <input class="input" id="title" name="title" type="text" required maxlength="255" value={row.title} />
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label class="field__label" for="studentName">Nama mahasiswa</label>
+            <input class="input" id="studentName" name="studentName" type="text" required maxlength="160" value={row.studentName} />
+          </div>
+          <div class="field">
+            <label class="field__label" for="concentration">Konsentrasi</label>
+            <input class="input" id="concentration" name="concentration" type="text" maxlength="120" value={row.concentration ?? ''} />
+            <p class="field__hint">Opsional.</p>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="button button--primary" type="submit">Simpan perubahan</button>
+          <a class="button" href="/alternatif">Batal</a>
+        </div>
+      </form>
+    </div>
+    </section>
+  </div>
+</App>

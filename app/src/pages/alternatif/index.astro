@@ -1,0 +1,109 @@
+---
+import App from '../../layouts/App.astro';
+import { actions } from 'astro:actions';
+import { db } from '../../lib/guard';
+import { alternatives, scores } from '../../db/schema';
+import { asc, sql } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+const canEdit = user.role === 'admin';
+
+const rows = await db.select().from(alternatives).orderBy(asc(alternatives.code));
+const scoreCounts = await db
+  .select({ alternativeId: scores.alternativeId, n: sql<number>`count(*)` })
+  .from(scores)
+  .groupBy(scores.alternativeId);
+
+const countMap = new Map(scoreCounts.map((r) => [Number(r.alternativeId), Number(r.n)]));
+
+const savedAction = Astro.getActionResult(actions.alternatives.save);
+const removedAction = Astro.getActionResult(actions.alternatives.remove);
+const toggleAction = Astro.getActionResult(actions.alternatives.toggleActive);
+const actionError = savedAction?.error ?? removedAction?.error ?? toggleAction?.error;
+---
+
+<App title="Alternatif" page="Alternatif" lead="Proposal yang dibandingkan. Setiap alternatif memerlukan nilai pada semua kriteria agar bisa dihitung.">
+  <Fragment slot="actions">
+    {canEdit && <a class="button button--primary" href="/alternatif/baru">Tambah alternatif</a>}
+  </Fragment>
+
+  <div class="stack">
+    {savedAction?.data && <div class="notice notice--success" role="status">Alternatif disimpan.</div>}
+    {removedAction?.data && <div class="notice notice--success" role="status">Alternatif dihapus.</div>}
+    {toggleAction?.data && <div class="notice notice--success" role="status">Status alternatif diperbarui.</div>}
+    {actionError && (
+      <div class="notice notice--error" role="alert">
+        <span class="notice__title">Perubahan tidak tersimpan</span>
+        {actionError.message}
+      </div>
+    )}
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Daftar alternatif</h2>
+        <p class="panel__meta">{rows.length} proposal</p>
+      </div>
+
+      {rows.length === 0 ? (
+        <div class="empty-state">
+          <p class="empty-state__title">Belum ada alternatif</p>
+          <p class="empty-state__body">Tambahkan minimal dua proposal agar perbandingan metode punya arti.</p>
+          {canEdit && <a class="button button--primary" href="/alternatif/baru">Tambah alternatif pertama</a>}
+        </div>
+      ) : (
+        <div class="panel__body panel__body--flush">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Kode</th>
+                  <th scope="col">Judul proposal</th>
+                  <th scope="col">Mahasiswa</th>
+                  <th scope="col">Konsentrasi</th>
+                  <th scope="col" class="num">Nilai terisi</th>
+                  <th scope="col">Status</th>
+                  <th scope="col"><span class="visually-hidden">Tindakan</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((a) => (
+                  <tr data-alternative-id={a.id} data-alternative-code={a.code}>
+                    <td><span class="matrix-tag">{a.code}</span></td>
+                    <td>{a.title}</td>
+                    <td>
+                      {a.studentName}
+                      <span class="muted small nowrap"> · {a.nim}</span>
+                    </td>
+                    <td>{a.concentration ?? '-'}</td>
+                    <td class="num">{countMap.get(Number(a.id)) ?? 0}</td>
+                    <td>{a.isActive ? 'Aktif' : 'Nonaktif'}</td>
+                    <td>
+                      <div class="cluster">
+                        {canEdit && <a class="button button--quiet" href={`/alternatif/${a.id}`}>Ubah</a>}
+                        {canEdit && (
+                          <form method="post" action={actions.alternatives.toggleActive}>
+                            <input type="hidden" name="id" value={a.id} />
+                            <input type="hidden" name="active" value={a.isActive ? 'false' : 'true'} />
+                            <button class="button button--quiet" type="submit">
+                              {a.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                            </button>
+                          </form>
+                        )}
+                        {canEdit && (
+                          <form method="post" action={actions.alternatives.remove} onsubmit="return confirm('Hapus alternatif ini beserta nilainya?')">
+                            <input type="hidden" name="id" value={a.id} />
+                            <button class="button button--quiet button--danger" type="submit">Hapus</button>
+                          </form>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
+  </div>
+</App>

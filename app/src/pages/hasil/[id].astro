@@ -1,0 +1,148 @@
+---
+import App from '../../layouts/App.astro';
+import { loadRun } from '../../lib/runs';
+import { verifySnapshotHash, type RunSnapshot } from '../../lib/snapshot';
+import { formatDateTime, formatNumber } from '../../lib/format';
+
+const id = Number(Astro.params.id);
+if (!Number.isFinite(id) || id <= 0) return Astro.redirect('/hasil', 303);
+
+const data = await loadRun(id);
+if (!data) return Astro.redirect('/hasil', 303);
+
+const snapshot = data.run.snapshot as RunSnapshot;
+const hashMatches = verifySnapshotHash(snapshot, data.run.snapshotHash);
+
+const criteria = snapshot.criteria;
+const ranking = snapshot.ranking;
+const rows = ranking.map((entry) => ({
+  ...entry,
+  values: criteria.map((c) => snapshot.scores[`${entry.code}:${c.code}`]),
+}));
+---
+
+<App
+  title={`Hasil ${snapshot.method.toUpperCase()}`}
+  page="Hasil"
+  lead={`Dihitung ${formatDateTime(data.run.createdAt)} dari snapshot tetap. Perubahan data master tidak mengubah halaman ini.`}
+>
+  <Fragment slot="actions">
+    <div class="cluster">
+      <a class="button button--quiet" href="/hasil">Kembali ke riwayat</a>
+      <button class="button" type="button" onclick="window.print()">Cetak</button>
+    </div>
+  </Fragment>
+
+  <div class="stack">
+    {snapshot.warnings.length > 0 && (
+      <div class="notice notice--warning" role="status">
+        <span class="notice__title">Catatan saat perhitungan</span>
+        <ul>
+          {snapshot.warnings.map((w) => (
+            <li>{w}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Peringkat akhir</h2>
+        <p class="panel__meta">Metode {snapshot.method.toUpperCase()}</p>
+      </div>
+      <div class="panel__body panel__body--flush">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col" class="num">Peringkat</th>
+                <th scope="col">Kode</th>
+                <th scope="col">Judul proposal</th>
+                {criteria.map((c) => (
+                  <th scope="col" class="num">{c.code}</th>
+                ))}
+                <th scope="col" class="num">Nilai</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr>
+                  <td class="num">
+                    <span class:list={['rank-badge', { 'rank-badge--top': row.rank === 1 }]}>{row.rank}</span>
+                  </td>
+                  <td><span class="matrix-tag">{row.code}</span></td>
+                  <td>{row.title}</td>
+                  {row.values.map((v) => (
+                    <td class="num">{v === undefined ? '-' : formatNumber(v, 2)}</td>
+                  ))}
+                  <td class="num">{formatNumber(row.value, 6)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Bobot yang dipakai</h2>
+        <p class="panel__meta">Total asli {formatNumber(snapshot.rawWeightSum, 4)}</p>
+      </div>
+      <div class="panel__body panel__body--flush">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Kode</th>
+                <th scope="col">Kriteria</th>
+                <th scope="col">Arah</th>
+                <th scope="col" class="num">Bobot</th>
+                <th scope="col" class="num">Ternormalisasi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {criteria.map((c) => (
+                <tr>
+                  <td><span class="matrix-tag">{c.code}</span></td>
+                  <td>{c.name}</td>
+                  <td>{c.direction === 'benefit' ? 'Benefit' : 'Cost'}</td>
+                  <td class="num">{formatNumber(c.weight, 4)}</td>
+                  <td class="num">
+                    {snapshot.rawWeightSum > 0 ? formatNumber(c.weight / snapshot.rawWeightSum, 4) : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Sidik snapshot</h2>
+        <p class="panel__meta">{hashMatches ? 'Cocok dengan isi snapshot' : 'Tidak cocok dengan isi snapshot'}</p>
+      </div>
+      <div class="panel__body">
+        <p class="muted small">
+          Sidik SHA-256 dihitung dari isi snapshot: kriteria, bobot, matriks nilai, dan hasil peringkat. Waktu
+          penyimpanan dan catatan tidak ikut dihitung, sehingga dua penyimpanan dengan data yang sama menghasilkan
+          sidik yang sama.
+        </p>
+        <p class="formula mt-4">{data.run.snapshotHash}</p>
+
+        {hashMatches ? (
+          <p class="notice notice--success mt-4" role="status">
+            Sidik tersimpan cocok dengan isi snapshot saat ini. Isi snapshot tidak berubah sejak disimpan.
+          </p>
+        ) : (
+          <p class="notice notice--error mt-4" role="alert">
+            Sidik tersimpan tidak cocok dengan isi snapshot. Isi snapshot berbeda dari saat disimpan, jadi hasil ini
+            tidak dapat dipercaya sebagai catatan asli.
+          </p>
+        )}
+      </div>
+    </section>
+  </div>
+</App>

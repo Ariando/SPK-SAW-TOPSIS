@@ -1,0 +1,120 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  page?: string;
+  lead?: string;
+}
+
+const { title, page, lead } = Astro.props;
+const user = Astro.locals.user;
+const path = Astro.url.pathname;
+
+const groups = [
+  {
+    label: 'Data',
+    items: [
+      { href: '/kriteria', marker: 'C', text: 'Kriteria', match: '/kriteria' },
+      { href: '/alternatif', marker: 'A', text: 'Alternatif', match: '/alternatif' },
+      { href: '/penilaian', marker: 'X', text: 'Penilaian', match: '/penilaian' },
+    ],
+  },
+  {
+    label: 'Perhitungan',
+    items: [
+      { href: '/hitung', marker: 'M', text: 'Hitung', match: '/hitung' },
+      { href: '/hasil', marker: 'R', text: 'Hasil', match: '/hasil' },
+    ],
+  },
+];
+
+const isActive = (match: string) => path === match || path.startsWith(match + '/');
+---
+
+<Base title={`${page ? page + ' - ' : ''}TELAAH`}>
+  <div class="shell">
+    <a class="skip-link" href="#main">Lewati ke konten</a>
+    <header class="masthead">
+      <div class="masthead__inner">
+        <a class="masthead__brand" href="/dashboard">
+          <img class="masthead__logo" src="/logo-akprind.png" alt="Logo Institut Sains dan Teknologi AKPRIND Yogyakarta" width="40" height="40" />
+          <span>
+            <span class="masthead__name">TELAAH</span>
+            <span class="masthead__tagline">Telaah kelayakan proposal skripsi</span>
+          </span>
+        </a>
+        <span class="masthead__spacer"></span>
+        {user && (
+          <div class="masthead__user">
+            <span class="nowrap">{user.name}</span>
+            <form method="post" action="/api/signout">
+              <button class="button button--quiet" type="submit">Keluar</button>
+            </form>
+          </div>
+        )}
+      </div>
+    </header>
+
+    <div class="workspace">
+      <nav class="nav" aria-label="Navigasi utama">
+        <div class="nav__group">
+          <ul class="nav__list" role="list">
+            <li>
+              <a class="nav__link" href="/dashboard" aria-current={path === '/dashboard' ? 'page' : undefined}>
+                <span class="nav__marker" aria-hidden="true">00</span>
+                <span>Ringkasan</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+        {groups.map((group) => (
+          <div class="nav__group">
+            <p class="nav__label">{group.label}</p>
+            <ul class="nav__list" role="list">
+              {group.items.map((item) => (
+                <li>
+                  <a class="nav__link" href={item.href} aria-current={isActive(item.match) ? 'page' : undefined}>
+                    <span class="nav__marker" aria-hidden="true">{item.marker}</span>
+                    <span>{item.text}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        {user?.role === 'admin' && (
+          <div class="nav__group">
+            <p class="nav__label">Pengguna</p>
+            <ul class="nav__list" role="list">
+              <li>
+                <a class="nav__link" href="/pengguna" aria-current={isActive('/pengguna') ? 'page' : undefined}>
+                  <span class="nav__marker" aria-hidden="true">U</span>
+                  <span>Akun</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        )}
+      </nav>
+
+      <main class="content" id="main">
+        <div class="page-head">
+          <div>
+            <h1>{title}</h1>
+            {lead && <p class="page-head__lead">{lead}</p>}
+          </div>
+          <slot name="actions" />
+        </div>
+        <slot />
+      </main>
+    </div>
+
+    <footer class="page-footer">
+      <div class="page-footer__inner">
+        <span>TELAAH, Telaah Kelayakan Proposal Skripsi</span>
+        <span>Institut Sains dan Teknologi AKPRIND Yogyakarta</span>
+      </div>
+    </footer>
+  </div>
+</Base>

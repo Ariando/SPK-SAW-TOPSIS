@@ -1,0 +1,319 @@
+{
+  "name": "dataset-demo-f0",
+  "purpose": "Fixture verifikasi untuk F5. Angka dihitung manual dan dicocokkan dengan lembar perhitungan-manual.xlsx.",
+  "scale": "Skala nilai 1 sampai 5, mengikuti rubrik aplikasi lama. Skala ini bukan ketentuan metode.",
+  "criteria": [
+    {
+      "code": "C1",
+      "name": "Relevansi tema dan judul",
+      "weight": 0.3,
+      "direction": "benefit"
+    },
+    {
+      "code": "C2",
+      "name": "Ketajaman metodologi",
+      "weight": 0.25,
+      "direction": "benefit"
+    },
+    {
+      "code": "C3",
+      "name": "Ketersediaan data",
+      "weight": 0.2,
+      "direction": "benefit"
+    },
+    {
+      "code": "C4",
+      "name": "Beban biaya dan waktu",
+      "weight": 0.25,
+      "direction": "cost"
+    }
+  ],
+  "weightSum": 1,
+  "normalizedWeights": [
+    0.3,
+    0.25,
+    0.2,
+    0.25
+  ],
+  "alternatives": [
+    {
+      "code": "A1",
+      "title": "Sistem rekomendasi beasiswa berbasis profil",
+      "values": [
+        4,
+        3,
+        5,
+        2
+      ]
+    },
+    {
+      "code": "A2",
+      "title": "Deteksi plagiarisme dokumen akademik",
+      "values": [
+        3,
+        5,
+        4,
+        3
+      ]
+    },
+    {
+      "code": "A3",
+      "title": "Optimasi jadwal kuliah dengan algoritma genetika",
+      "values": [
+        5,
+        4,
+        3,
+        4
+      ]
+    },
+    {
+      "code": "A4",
+      "title": "Aplikasi monitoring magang berbasis web",
+      "values": [
+        2,
+        2,
+        4,
+        1
+      ]
+    }
+  ],
+  "matrix": [
+    [
+      4,
+      3,
+      5,
+      2
+    ],
+    [
+      3,
+      5,
+      4,
+      3
+    ],
+    [
+      5,
+      4,
+      3,
+      4
+    ],
+    [
+      2,
+      2,
+      4,
+      1
+    ]
+  ],
+  "expected": {
+    "saw": {
+      "max": [
+        5,
+        5,
+        5,
+        4
+      ],
+      "min": [
+        2,
+        2,
+        3,
+        1
+      ],
+      "r": [
+        [
+          0.8,
+          0.6,
+          1,
+          0.5
+        ],
+        [
+          0.6,
+          1,
+          0.8,
+          0.3333333333
+        ],
+        [
+          1,
+          0.8,
+          0.6,
+          0.25
+        ],
+        [
+          0.4,
+          0.4,
+          0.8,
+          1
+        ]
+      ],
+      "v": [
+        0.715,
+        0.6733333333,
+        0.6825,
+        0.63
+      ],
+      "rank": [
+        {
+          "rank": 1,
+          "tied": false
+        },
+        {
+          "rank": 3,
+          "tied": false
+        },
+        {
+          "rank": 2,
+          "tied": false
+        },
+        {
+          "rank": 4,
+          "tied": false
+        }
+      ]
+    },
+    "wp": {
+      "s": [
+        2.3143807748,
+        2.0845415787,
+        2.018902065,
+        1.9318726578
+      ],
+      "totalS": 8.3496970763,
+      "v": [
+        0.2771814059,
+        0.2496547551,
+        0.2417934503,
+        0.2313703887
+      ],
+      "rank": [
+        {
+          "rank": 1,
+          "tied": false
+        },
+        {
+          "rank": 2,
+          "tied": false
+        },
+        {
+          "rank": 3,
+          "tied": false
+        },
+        {
+          "rank": 4,
+          "tied": false
+        }
+      ]
+    },
+    "topsis": {
+      "divisor": [
+        7.3484692283,
+        7.3484692283,
+        8.1240384046,
+        5.4772255751
+      ],
+      "r": [
+        [
+          0.544331054,
+          0.4082482905,
+          0.6154574549,
+          0.3651483717
+        ],
+        [
+          0.4082482905,
+          0.6804138174,
+          0.4923659639,
+          0.5477225575
+        ],
+        [
+          0.6804138174,
+          0.544331054,
+          0.3692744729,
+          0.7302967433
+        ],
+        [
+          0.272165527,
+          0.272165527,
+          0.4923659639,
+          0.1825741858
+        ]
+      ],
+      "y": [
+        [
+          0.1632993162,
+          0.1020620726,
+          0.123091491,
+          0.0912870929
+        ],
+        [
+          0.1224744871,
+          0.1701034544,
+          0.0984731928,
+          0.1369306394
+        ],
+        [
+          0.2041241452,
+          0.1360827635,
+          0.0738548946,
+          0.1825741858
+        ],
+        [
+          0.0816496581,
+          0.0680413817,
+          0.0984731928,
+          0.0456435465
+        ]
+      ],
+      "idealPlus": [
+        0.2041241452,
+        0.1701034544,
+        0.123091491,
+        0.0456435465
+      ],
+      "idealMinus": [
+        0.0816496581,
+        0.0680413817,
+        0.0738548946,
+        0.1825741858
+      ],
+      "dPlus": [
+        0.091540317,
+        0.1249242195,
+        0.1494377791,
+        0.1613156139
+      ],
+      "dMinus": [
+        0.1363145254,
+        0.1215431087,
+        0.1401057801,
+        0.1391260601
+      ],
+      "v": [
+        0.5982516061,
+        0.493140854,
+        0.4838849826,
+        0.4630717779
+      ],
+      "rank": [
+        {
+          "rank": 1,
+          "tied": false
+        },
+        {
+          "rank": 2,
+          "tied": false
+        },
+        {
+          "rank": 3,
+          "tied": false
+        },
+        {
+          "rank": 4,
+          "tied": false
+        }
+      ]
+    }
+  },
+  "tolerance": 0.0001,
+  "notes": [
+    "Peringkat memakai dense ranking. Aplikasi lama memakai nomor urut posisi sehingga seri menjadi peringkat berbeda.",
+    "Nilai V disimpan 8 desimal, dibulatkan 4 desimal hanya saat tampil.",
+    "TOPSIS: solusi ideal dihitung dari matriks terbobot Y, bukan dari matriks ternormalisasi R."
+  ]
+}

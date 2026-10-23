@@ -1,0 +1,94 @@
+---
+import App from '../layouts/App.astro';
+import { db } from '../lib/guard';
+import { alternatives, criteria, scores } from '../db/schema';
+import { sql } from 'drizzle-orm';
+
+const [criteriaCount] = await db.select({ n: sql<number>`count(*)` }).from(criteria);
+const [alternatifCount] = await db.select({ n: sql<number>`count(*)` }).from(alternatives);
+const [scoreCount] = await db.select({ n: sql<number>`count(*)` }).from(scores);
+
+const stats = [
+  { label: 'Kriteria aktif', value: Number(criteriaCount?.n ?? 0), href: '/kriteria', text: 'Kelola kriteria' },
+  { label: 'Alternatif terdaftar', value: Number(alternatifCount?.n ?? 0), href: '/alternatif', text: 'Kelola alternatif' },
+  { label: 'Nilai terisi', value: Number(scoreCount?.n ?? 0), href: '/penilaian', text: 'Isi penilaian' },
+];
+---
+
+<App title="Ringkasan" page="Ringkasan" lead="Keadaan data saat ini dan langkah yang bisa langsung dikerjakan.">
+  <div class="stack">
+    <section class="stat-row" aria-label="Ringkasan data">
+      {stats.map((s) => (
+        <div class="stat">
+          <span class="stat__label">{s.label}</span>
+          <p class="stat__value">{s.value}</p>
+          <a class="stat__link" href={s.href}>{s.text}</a>
+        </div>
+      ))}
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Alur kerja</h2>
+      </div>
+      <div class="panel__body">
+        <ol class="step-list">
+          <li>
+            <strong>1. Tentukan kriteria dan bobot.</strong>
+            <p class="muted small">Setiap kriteria punya arah benefit atau cost. Total bobot diperiksa sebelum perhitungan.</p>
+          </li>
+          <li>
+            <strong>2. Daftarkan alternatif proposal.</strong>
+            <p class="muted small">Minimal dua alternatif agar perbandingan punya arti.</p>
+          </li>
+          <li>
+            <strong>3. Isi matriks penilaian.</strong>
+            <p class="muted small">Satu layar berisi semua sel. Sel kosong terdeteksi sebelum perhitungan diizinkan.</p>
+          </li>
+          <li>
+            <strong>4. Hitung dan simpan hasil.</strong>
+            <p class="muted small">Pilih metode, periksa jejak langkah, lalu simpan sebagai riwayat yang tidak berubah.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Metode tersedia</h2>
+        <p class="panel__meta">SAW, WP, TOPSIS</p>
+      </div>
+      <div class="panel__body">
+        <div class="table-wrap">
+          <table class="data-table">
+            <caption>Metode yang sudah dapat dipakai pada rilis ini.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Metode</th>
+                <th scope="col">Pendekatan</th>
+                <th scope="col">Keluaran</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">SAW</th>
+                <td>Penjumlahan terbobot setelah normalisasi proporsional</td>
+                <td class="num">V dari 0 sampai total bobot</td>
+              </tr>
+              <tr>
+                <th scope="row">WP</th>
+                <td>Perkalian berpangkat dengan bobot ternormalisasi</td>
+                <td class="num">V dari 0 sampai 1, jumlah 1</td>
+              </tr>
+              <tr>
+                <th scope="row">TOPSIS</th>
+                <td>Jarak ke solusi ideal positif dan negatif</td>
+                <td class="num">V dari 0 sampai 1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</App>

@@ -1,0 +1,227 @@
+---
+import App from '../../../layouts/App.astro';
+import ActionNotice from '../../../components/ActionNotice.astro';
+import { actions } from 'astro:actions';
+import { db } from '../../../lib/guard';
+import { criteria, rubrics } from '../../../db/schema';
+import { asc, eq } from 'drizzle-orm';
+import { formatNumber } from '../../../lib/format';
+
+const user = Astro.locals.user!;
+if (user.role !== 'admin') return Astro.redirect('/kriteria', 303);
+
+const criterionId = Number(Astro.params.id);
+if (!Number.isFinite(criterionId) || criterionId <= 0) return Astro.redirect('/kriteria', 303);
+
+const [criterion] = await db.select().from(criteria).where(eq(criteria.id, criterionId)).limit(1);
+if (!criterion) return Astro.redirect('/kriteria', 303);
+
+const list = await db
+  .select()
+  .from(rubrics)
+  .where(eq(rubrics.criterionId, criterionId))
+  .orderBy(asc(rubrics.sortOrder), asc(rubrics.value));
+
+const saveResult = Astro.getActionResult(actions.rubrics.save);
+const removeResult = Astro.getActionResult(actions.rubrics.remove);
+const actionError = saveResult?.error ?? removeResult?.error;
+const saved = Boolean(saveResult?.data);
+const removed = Boolean(removeResult?.data);
+
+const nextSortOrder = list.length === 0 ? 1 : Math.max(...list.map((r) => r.sortOrder)) + 1;
+---
+
+<App
+  title={`Rubrik ${criterion.code}`}
+  page="Kriteria"
+  lead={`Pilihan cepat untuk ${criterion.name}. Rubrik mempercepat pengisian, tetapi tidak mengunci nilai.`}
+>
+  <Fragment slot="actions">
+    <a class="button button--quiet" href={`/kriteria/${criterion.id}`}>Kembali ke kriteria</a>
+  </Fragment>
+
+  <div class="stack">
+    <ActionNotice
+      success={saved ? 'Rubrik tersimpan.' : removed ? 'Rubrik dihapus.' : null}
+      error={actionError}
+    />
+
+    <div class="notice notice--info" role="status">
+      <span class="notice__title">Cara kerja rubrik</span>
+      Nilai pada halaman penilaian tetap berupa angka bebas. Rubrik di sini hanya menyediakan daftar saran nilai
+      beserta labelnya, agar penilai tidak perlu menghafal skala.
+    </div>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Daftar rubrik</h2>
+        <p class="panel__meta">{list.length} rubrik</p>
+      </div>
+
+      {list.length === 0 ? (
+        <div class="empty-state">
+          <p class="empty-state__title">Belum ada rubrik</p>
+          <p class="empty-state__body">
+            Tambahkan skala penilaian untuk kriteria ini, misalnya Sangat kurang sampai Sangat baik dengan nilai 1
+            sampai 5.
+          </p>
+        </div>
+      ) : (
+        <div class="panel__body panel__body--flush">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Label</th>
+                  <th scope="col" class="num">Nilai</th>
+                  <th scope="col" class="num">Urutan</th>
+                  <th scope="col"><span class="visually-hidden">Tindakan</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((r) => {
+                  const formId = `rubrik-${r.id}`;
+                  return (
+                    <tr data-rubric-id={r.id}>
+                      <td>
+                        <form id={formId} method="post" action={actions.rubrics.save}></form>
+                        <input type="hidden" form={formId} name="id" value={r.id} />
+                        <input type="hidden" form={formId} name="criterionId" value={criterionId} />
+                        <input
+                          class="input"
+                          form={formId}
+                          name="label"
+                          type="text"
+                          value={r.label}
+                          required
+                          maxlength="160"
+                          aria-label={`Label rubrik ${r.label}`}
+                        />
+                      </td>
+                      <td class="num">
+                        <input
+                          class="input num"
+                          form={formId}
+                          name="value"
+                          type="number"
+                          step="0.0001"
+                          min="0"
+                          max="1000"
+                          value={String(r.value)}
+                          required
+                          aria-label={`Nilai rubrik ${r.label}`}
+                        />
+                      </td>
+                      <td class="num">
+                        <input
+                          class="input num"
+                          form={formId}
+                          name="sortOrder"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={r.sortOrder}
+                          aria-label={`Urutan rubrik ${r.label}`}
+                        />
+                      </td>
+                      <td>
+                        <div class="cluster">
+                          <button class="button button--quiet" form={formId} type="submit">Simpan</button>
+                          <form
+                            method="post"
+                            action={actions.rubrics.remove}
+                            onsubmit="return confirm('Hapus rubrik ini? Nilai yang sudah diisi tidak berubah.')"
+                          >
+                            <input type="hidden" name="id" value={r.id} />
+                            <button class="button button--quiet button--danger" type="submit">Hapus</button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Tambah rubrik</h2>
+        <p class="panel__meta">Untuk {criterion.code}</p>
+      </div>
+      <div class="panel__body">
+        <form method="post" action={actions.rubrics.save} class="stack">
+          <input type="hidden" name="criterionId" value={criterionId} />
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label" for="new-label">Label</label>
+              <input
+                class="input"
+                id="new-label"
+                name="label"
+                type="text"
+                required
+                maxlength="160"
+                placeholder="Sangat baik"
+              />
+              <p class="field__hint">Contoh: Sangat kurang, Cukup, Sangat baik.</p>
+            </div>
+            <div class="field">
+              <label class="field__label" for="new-value">Nilai</label>
+              <input
+                class="input num"
+                id="new-value"
+                name="value"
+                type="number"
+                step="0.0001"
+                min="0"
+                max="1000"
+                required
+                placeholder="5"
+              />
+              <p class="field__hint">Angka yang akan dipakai saat rubrik dipilih.</p>
+            </div>
+            <div class="field">
+              <label class="field__label" for="new-sort">Urutan</label>
+              <input
+                class="input num"
+                id="new-sort"
+                name="sortOrder"
+                type="number"
+                min="0"
+                step="1"
+                value={nextSortOrder}
+              />
+              <p class="field__hint">Menentukan urutan tampil di daftar saran.</p>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="button button--primary" type="submit">Tambah rubrik</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Ringkasan skala</h2>
+      </div>
+      <div class="panel__body">
+        {list.length === 0 ? (
+          <p class="muted small">Belum ada skala yang bisa diringkas.</p>
+        ) : (
+          <p class="small">
+            Rentang nilai rubrik: <strong>{formatNumber(Math.min(...list.map((r) => Number(r.value))), 2)}</strong>
+            {' sampai '}
+            <strong>{formatNumber(Math.max(...list.map((r) => Number(r.value))), 2)}</strong>
+            {' dari '}
+            {list.length} pilihan.
+          </p>
+        )}
+      </div>
+    </section>
+  </div>
+</App>

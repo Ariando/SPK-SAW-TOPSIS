@@ -1,0 +1,21 @@
+---
+interface Props {
+  error?: { message?: string } | null;
+  success?: string | null;
+}
+
+const { error, success } = Astro.props;
+const message = error?.message ?? '';
+const isValidation = message.startsWith('Failed to validate') || message.includes('invalid_');
+---
+
+{success && (
+  <div class="notice notice--success" role="status">{success}</div>
+)}
+
+{error && (
+  <div class="notice notice--error" role="alert">
+    <span class="notice__title">Perubahan tidak tersimpan</span>
+    {isValidation ? 'Ada isian yang belum sesuai. Periksa kembali kolom yang wajib diisi dan rentang nilainya.' : message}
+  </div>
+)}

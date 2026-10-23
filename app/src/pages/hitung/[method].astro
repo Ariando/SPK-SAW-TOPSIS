@@ -1,0 +1,133 @@
+---
+import App from '../../layouts/App.astro';
+import StepTable from '../../components/StepTable.astro';
+import { loadMatrix } from '../../lib/queries';
+import { getMethod } from '../../lib/dss/registry';
+import { sortedRanking } from '../../lib/dss/types';
+import { formatNumber } from '../../lib/format';
+import { actions } from 'astro:actions';
+
+const method = getMethod(Astro.params.method ?? '');
+if (!method) return Astro.redirect('/hitung', 303);
+
+const matrix = await loadMatrix(true);
+const ready =
+  matrix.missing.length === 0 &&
+  matrix.input.criteria.length > 0 &&
+  matrix.input.alternatives.length >= 2;
+
+if (!ready) return Astro.redirect('/hitung', 303);
+
+const result = method.compute(matrix.input);
+const ranking = sortedRanking(result);
+const altById = new Map(matrix.input.alternatives.map((a) => [a.id, a]));
+const saveResult = Astro.getActionResult(actions.runs.save);
+const saved = Boolean(saveResult?.data);
+const saveError = saveResult?.error;
+const criteria = matrix.input.criteria;
+const numericFrom = 1;
+---
+
+<App
+  title={`Perhitungan ${method.label}`}
+  page="Hitung"
+  lead={`${matrix.input.alternatives.length} alternatif, ${criteria.length} kriteria, ${method.label} dengan bobot ternormalisasi.`}
+>
+  <Fragment slot="actions">
+    <div class="cluster">
+      <a class="button button--quiet" href="/hitung">Ganti metode</a>
+      <form method="post" action={actions.runs.save}>
+        <input type="hidden" name="method" value={method.id} />
+        <button class="button button--primary" type="submit">Simpan hasil</button>
+      </form>
+    </div>
+  </Fragment>
+
+  <div class="stack">
+    {saved && (
+      <div class="notice notice--success" role="status">
+        Hasil disimpan. <a href="/hasil">Lihat riwayat</a>
+      </div>
+    )}
+    {saveError && (
+      <div class="notice notice--error" role="alert">
+        <span class="notice__title">Hasil tidak tersimpan</span>
+        {saveError.message}
+      </div>
+    )}
+
+    {result.warnings.map((w) => (
+      <div class="notice notice--warning" role="status">{w}</div>
+    ))}
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Peringkat akhir {method.label}</h2>
+        <p class="panel__meta">{ranking.length} alternatif</p>
+      </div>
+      <div class="panel__body panel__body--flush">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col" class="num">Peringkat</th>
+                <th scope="col">Kode</th>
+                <th scope="col">Judul proposal</th>
+                <th scope="col" class="num">Nilai</th>
+                <th scope="col">Catatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ranking.map((entry) => {
+                const alt = altById.get(entry.alternativeId);
+                return (
+                  <tr>
+                    <td class="num">
+                      <span class:list={['rank-badge', { 'rank-badge--top': entry.rank === 1 }]}>{entry.rank}</span>
+                    </td>
+                    <td><span class="matrix-tag">{alt?.code}</span></td>
+                    <td>{alt?.title}</td>
+                    <td class="num">{formatNumber(entry.value, 4)}</td>
+                    <td class="muted small">{entry.tied ? 'Nilai seri dengan alternatif lain' : ''}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="langkah">
+      <h2 id="langkah" style="margin-bottom: var(--space-3);">Jejak langkah perhitungan</h2>
+      <ol class="step-list">
+        {result.steps.map((step, index) => (
+          <li>
+            <section class="panel">
+              <div class="panel__head">
+                <h3 class="panel__title">
+                  <span class="step-index">{String(index + 1).padStart(2, '0')}</span>
+                  {step.title}
+                </h3>
+              </div>
+              <div class="panel__body">
+                {step.formula && <p class="formula">{step.formula}</p>}
+                {step.note && <p class="muted small mt-4">{step.note}</p>}
+                <div class="mt-4">
+                  <StepTable
+                    columns={step.columns}
+                    rows={step.rows}
+                    numericFrom={numericFrom}
+                    highlight
+                    dense={step.rows.length > 8}
+                    caption={`${step.title}, ${method.label}`}
+                  />
+                </div>
+              </div>
+            </section>
+          </li>
+        ))}
+      </ol>
+    </section>
+  </div>
+</App>
