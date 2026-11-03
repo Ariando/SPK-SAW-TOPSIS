@@ -1,6 +1,6 @@
 ---
 import App from '../../layouts/App.astro';
-import { loadRun } from '../../lib/runs';
+import { loadRun, loadAlternativeIds } from '../../lib/runs';
 import { verifySnapshotHash, type RunSnapshot } from '../../lib/snapshot';
 import { formatDateTime, formatNumber } from '../../lib/format';
 
@@ -12,6 +12,21 @@ if (!data) return Astro.redirect('/hasil', 303);
 
 const snapshot = data.run.snapshot as RunSnapshot;
 const hashMatches = verifySnapshotHash(snapshot, data.run.snapshotHash);
+
+/**
+ * Tabel computation_results menyimpan salinan skor saat run disimpan.
+ * Salinan itu dibandingkan dengan isi snapshot supaya perbedaan antara
+ * keduanya tidak lolos tanpa terlihat.
+ */
+const resultsByAltId = new Map(data.results.map((r) => [Number(r.alternativeId), r]));
+const altIdByCode = new Map(await loadAlternativeIds());
+const resultMismatch = snapshot.ranking.filter((entry) => {
+  const altId = altIdByCode.get(entry.code);
+  if (!altId) return true;
+  const stored = resultsByAltId.get(altId);
+  if (!stored) return true;
+  return Math.abs(Number(stored.score) - entry.value) > 1e-8 || stored.rankNo !== entry.rank;
+});
 
 const criteria = snapshot.criteria;
 const ranking = snapshot.ranking;
@@ -29,7 +44,7 @@ const rows = ranking.map((entry) => ({
   <Fragment slot="actions">
     <div class="cluster">
       <a class="button button--quiet" href="/hasil">Kembali ke riwayat</a>
-      <button class="button" type="button" onclick="window.print()">Cetak</button>
+      <a class="button" href={`/api/pdf?halaman=${encodeURIComponent(`/hasil/${data.run.id}`)}`} target="_blank" rel="noopener">Unduh PDF</a>
     </div>
   </Fragment>
 
@@ -47,12 +62,12 @@ const rows = ranking.map((entry) => ({
 
     <section class="panel">
       <div class="panel__head">
-        <h2 class="panel__title">Peringkat akhir</h2>
+        <h2 class="panel__title" id="tabel-peringkat-hasil">Peringkat akhir</h2>
         <p class="panel__meta">Metode {snapshot.method.toUpperCase()}</p>
       </div>
       <div class="panel__body panel__body--flush">
         <div class="table-wrap">
-          <table class="data-table">
+          <table class="data-table" aria-labelledby="tabel-peringkat-hasil">
             <thead>
               <tr>
                 <th scope="col" class="num">Peringkat</th>
@@ -86,12 +101,29 @@ const rows = ranking.map((entry) => ({
 
     <section class="panel">
       <div class="panel__head">
-        <h2 class="panel__title">Bobot yang dipakai</h2>
+        <h2 class="panel__title" id="tabel-bobot-hasil">Bobot yang dipakai</h2>
         <p class="panel__meta">Total asli {formatNumber(snapshot.rawWeightSum, 4)}</p>
       </div>
       <div class="panel__body panel__body--flush">
+        <div class="panel__body">
+          {snapshot.weightSource && snapshot.weightSource.source === 'scenario' ? (
+            <p class="notice notice--info" role="status">
+              <span class="notice__title">Bobot berasal dari skenario AHP</span>
+              {snapshot.weightSource.scenarioName}, Consistency Ratio
+              {snapshot.weightSource.scenarioCr === null ? '-' : formatNumber(snapshot.weightSource.scenarioCr, 4)}.
+              {snapshot.weightSource.scenarioId !== null && (
+                <>
+                  {' '}
+                  <a href={'/ahp/' + snapshot.weightSource.scenarioId}>Lihat skenario</a>.
+                </>
+              )}
+            </p>
+          ) : (
+            <p class="muted small">Bobot berasal dari master kriteria, bukan dari skenario AHP.</p>
+          )}
+        </div>
         <div class="table-wrap">
-          <table class="data-table">
+          <table class="data-table" aria-labelledby="tabel-bobot-hasil">
             <thead>
               <tr>
                 <th scope="col">Kode</th>
@@ -141,6 +173,19 @@ const rows = ranking.map((entry) => ({
             Sidik tersimpan tidak cocok dengan isi snapshot. Isi snapshot berbeda dari saat disimpan, jadi hasil ini
             tidak dapat dipercaya sebagai catatan asli.
           </p>
+        )}
+
+        {resultMismatch.length === 0 ? (
+          <p class="notice notice--success mt-4" role="status">
+            Tabel hasil tersimpan ({data.results.length} baris) cocok dengan isi snapshot.
+          </p>
+        ) : (
+          <div class="notice notice--error mt-4" role="alert">
+            <span class="notice__title">Tabel hasil tidak cocok dengan snapshot</span>
+            {resultMismatch.length} alternatif berbeda antara tabel hasil dan isi snapshot:
+            {resultMismatch.map((entry) => entry.code).join(', ')}. Tampilan di atas memakai isi snapshot, bukan tabel
+            hasil.
+          </div>
         )}
       </div>
     </section>

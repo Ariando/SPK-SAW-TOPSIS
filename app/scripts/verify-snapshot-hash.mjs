@@ -7,6 +7,7 @@ import mysql from 'mysql2/promise';
 import 'dotenv/config';
 import { hashSnapshot, splitSnapshot } from '../src/lib/snapshot.ts';
 
+import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
 const base = process.env.VERIFY_BASE ?? 'http://localhost:4321';
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL belum diisi');
@@ -84,7 +85,7 @@ const request = async (path, options = {}) => {
 const login = await request('/api/auth/sign-in/username', {
   method: 'POST',
   headers: { 'content-type': 'application/json', origin: base },
-  body: JSON.stringify({ username: 'admin', password: 'TelaahAdmin2026' }),
+  body: JSON.stringify({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD }),
 });
 if (login.status !== 200) {
   console.log('login gagal: ' + login.status);

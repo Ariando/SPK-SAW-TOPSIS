@@ -2,6 +2,7 @@
 // Dijalankan: node scripts/smoke-http.mjs [baseUrl]
 // Tidak memakai pustaka eksternal. Menyimpan cookie sesi antar permintaan.
 
+import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
 const base = process.argv[2] ?? 'http://localhost:4321';
 const jar = new Map();
 
@@ -69,7 +70,7 @@ const check = (name, ok, detail) => {
   const r = await request('/api/auth/sign-in/username', {
     method: 'POST',
     headers: { 'content-type': 'application/json', origin: base },
-    body: JSON.stringify({ username: 'admin', password: 'TelaahAdmin2026' }),
+    body: JSON.stringify({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD }),
   });
   check('login benar diterima', r.status === 200, String(r.status));
   check('cookie sesi diterima', jar.size > 0, [...jar.keys()].join(','));

@@ -1,0 +1,250 @@
+---
+import App from '../../layouts/App.astro';
+import { loadComparison } from '../../lib/comparison-runtime';
+import { formatDateTime, formatNumber, describeAgreement } from '../../lib/format';
+
+const status = await loadComparison();
+const analysis = status.analysis;
+
+const labelOf = (methodId: string) =>
+  status.runs.find((run) => run.method === methodId)?.label ?? methodId.toUpperCase();
+
+const totalAlternatif = analysis?.alternatives.length ?? 0;
+---
+
+<App
+  title="Perbandingan metode"
+  page="Hasil"
+  lead="Membandingkan hasil terbaru dari setiap metode, dengan syarat ketiganya dihitung dari data yang sama."
+>
+  <Fragment slot="actions">
+    <a class="button button--quiet" href="/hasil">Riwayat hasil</a>
+  </Fragment>
+
+  <div class="stack">
+    {status.blockers.length > 0 && (
+      <div class="notice notice--warning" role="status">
+        <span class="notice__title">Perbandingan belum bisa ditampilkan</span>
+        <ul>
+          {status.blockers.map((b) => (
+            <li>{b}</li>
+          ))}
+        </ul>
+        <div class="cluster mt-4">
+          <a class="button" href="/hitung">Buka halaman hitung</a>
+          <a class="button button--quiet" href="/hasil">Lihat riwayat</a>
+        </div>
+      </div>
+    )}
+
+    {analysis && (
+      <>
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title" id="tabel-sumber">Sumber data</h2>
+            <p class="panel__meta">
+              {totalAlternatif} alternatif, {status.runs.length} metode, sidik data sama
+            </p>
+          </div>
+          <div class="panel__body panel__body--flush">
+            <div class="table-wrap">
+              <table class="data-table" aria-labelledby="tabel-sumber">
+                <caption>
+                  Ketiga hasil berasal dari isi data yang sama. Sidik data yang identik menandakan kesebandingan.
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Metode</th>
+                    <th scope="col">Run</th>
+                    <th scope="col">Waktu simpan</th>
+                    <th scope="col">Catatan</th>
+                    <th scope="col">Sidik data</th>
+                    <th scope="col">Integritas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {status.runs.map((run) => (
+                    <tr>
+                      <td>{run.label}</td>
+                      <td class="num">
+                        <a href={`/hasil/${run.id}`}>{run.id}</a>
+                      </td>
+                      <td class="nowrap">{formatDateTime(run.createdAt)}</td>
+                      <td class="muted small">{run.note ?? '-'}</td>
+                      <td><code class="small">{run.dataHash.slice(0, 12)}</code></td>
+                      <td>{run.hashValid ? 'Utuh' : 'Berubah'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title">Tingkat kesepakatan</h2>
+            <p class="panel__meta">Kendall W {formatNumber(analysis.kendall.w ?? 0, 4)}</p>
+          </div>
+          <div class="panel__body">
+            <div class="stat-row">
+              <div class="stat">
+                <span class="stat__label">Kendall W</span>
+                <p class="stat__value">
+                  {analysis.kendall.w === null ? '-' : formatNumber(analysis.kendall.w, 4)}
+                </p>
+                <span class="muted small">{describeAgreement(analysis.kendall.w)}</span>
+              </div>
+              <div class="stat">
+                <span class="stat__label">Rata rata Spearman</span>
+                <p class="stat__value">
+                  {analysis.spearman.average === null ? '-' : formatNumber(analysis.spearman.average, 4)}
+                </p>
+                <span class="muted small">{analysis.spearman.pairs.length} pasangan metode</span>
+              </div>
+              <div class="stat">
+                <span class="stat__label">Nilai p</span>
+                <p class="stat__value">
+                  {analysis.kendall.pValue === null ? '-' : formatNumber(analysis.kendall.pValue, 4)}
+                </p>
+                <span class="muted small">df {analysis.kendall.df}, S {formatNumber(analysis.kendall.s, 0)}</span>
+              </div>
+            </div>
+
+            <p class="muted small mt-4">
+              Kendall W mengukur kesepakatan seluruh metode sekaligus. Nilai 1 berarti urutan ketiga metode sama
+              persis, nilai 0 berarti tidak ada kesepakatan. Spearman mengukur sepasang metode, berkisar -1 sampai 1.
+              Tafsiran seperti "tinggi" di atas hanya alat bantu membaca, bukan ambang baku dalam literatur.
+            </p>
+
+            {analysis.kendall.tieCorrection > 0 && (
+              <p class="muted small mt-4">
+                Koreksi seri diterapkan. Nilai koreksi total {analysis.kendall.tieCorrection}, sehingga penyebut Kendall W
+                disesuaikan. Tanpa koreksi ini, W akan terlalu tinggi.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title" id="tabel-borda">Peringkat gabungan Borda</h2>
+            <p class="panel__meta">Poin dijumlahkan antar metode</p>
+          </div>
+          <div class="panel__body panel__body--flush">
+            <div class="table-wrap">
+              <table class="data-table" aria-labelledby="tabel-borda">
+                <thead>
+                  <tr>
+                    <th scope="col" class="num">Peringkat</th>
+                    <th scope="col">Kode</th>
+                    <th scope="col">Judul proposal</th>
+                    {analysis.methods.map((method) => (
+                      <th scope="col" class="num">{method.label}</th>
+                    ))}
+                    <th scope="col" class="num">Poin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analysis.borda.map((row) => {
+                    const index = analysis.alternatives.findIndex((a) => a.code === row.code);
+                    return (
+                      <tr>
+                        <td class="num">
+                          <span class:list={['rank-badge', { 'rank-badge--top': row.rank === 1 }]}>{row.rank}</span>
+                        </td>
+                        <td><span class="matrix-tag">{row.code}</span></td>
+                        <td>
+                          {row.title}
+                          {row.tied && <span class="muted small"> · seri</span>}
+                        </td>
+                        {analysis.methods.map((method) => (
+                          <td class="num">{formatNumber(method.averageRanks[index], 2)}</td>
+                        ))}
+                        <td class="num">{formatNumber(row.points, 2)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title" id="tabel-spearman">Korelasi Spearman antar metode</h2>
+            <p class="panel__meta">Berkisar -1 sampai 1</p>
+          </div>
+          <div class="panel__body panel__body--flush">
+            <div class="table-wrap">
+              <table class="data-table" aria-labelledby="tabel-spearman">
+                <thead>
+                  <tr>
+                    <th scope="col">Metode A</th>
+                    <th scope="col">Metode B</th>
+                    <th scope="col" class="num">Koefisien</th>
+                    <th scope="col">Tafsiran</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analysis.spearman.pairs.map((pair) => (
+                    <tr>
+                      <td>{labelOf(pair.a)}</td>
+                      <td>{labelOf(pair.b)}</td>
+                      <td class="num">{formatNumber(pair.rho, 4)}</td>
+                      <td class="muted small">
+                        {pair.rho > 0.999 ? 'urutan sama persis' : pair.rho < -0.999 ? 'urutan terbalik' : describeAgreement(Math.abs(pair.rho))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2">Rata rata</td>
+                    <td class="num">
+                      {analysis.spearman.average === null ? '-' : formatNumber(analysis.spearman.average, 4)}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {analysis.warnings.length > 0 && (
+          <section class="panel">
+            <div class="panel__head">
+              <h2 class="panel__title">Catatan perhitungan</h2>
+            </div>
+            <div class="panel__body">
+              <ul>
+                {analysis.warnings.map((warning) => (
+                  <li class="small">{warning}</li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title">Ekspor</h2>
+            <p class="panel__meta">Lampiran laporan</p>
+          </div>
+          <div class="panel__body">
+            <p class="muted small">
+              Berkas Excel memuat ringkasan, peringkat, Borda, Spearman, dan Kendall dalam lembar terpisah, sehingga
+              angkanya bisa diperiksa ulang.
+            </p>
+            <div class="cluster mt-4">
+              <a class="button button--primary" href="/api/hasil/perbandingan.xlsx">Unduh Excel</a>
+              <a class="button" href={`/api/pdf?halaman=${encodeURIComponent('/hasil/bandingkan')}`} target="_blank" rel="noopener">Unduh PDF</a>
+            </div>
+          </div>
+        </section>
+      </>
+    )}
+  </div>
+</App>

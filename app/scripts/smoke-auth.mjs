@@ -2,6 +2,7 @@
 // login tetap berfungsi, dan halaman admin menolak peran peninjau.
 // Dijalankan: node scripts/smoke-auth.mjs [baseUrl]
 
+import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
 const base = process.argv[2] ?? 'http://localhost:4321';
 
 const results = [];
@@ -41,7 +42,7 @@ const cookieOf = (response) => {
 
 // 2. Login admin tetap berfungsi
 {
-  const r = await json('/api/auth/sign-in/username', { username: 'admin', password: 'TelaahAdmin2026' });
+  const r = await json('/api/auth/sign-in/username', { username: ADMIN_USERNAME, password: ADMIN_PASSWORD });
   check('login admin berhasil', r.status === 200, String(r.status));
 }
 
@@ -55,7 +56,7 @@ const cookieOf = (response) => {
 
 // 4. Sesi aktif bisa membaca dashboard, tanpa sesi tidak bisa
 {
-  const login = await json('/api/auth/sign-in/username', { username: 'admin', password: 'TelaahAdmin2026' });
+  const login = await json('/api/auth/sign-in/username', { username: ADMIN_USERNAME, password: ADMIN_PASSWORD });
   const cookie = cookieOf(login);
   check('cookie sesi diterima', cookie.length > 0, cookie.split(';')[0]?.split('=')[0] ?? '-');
 

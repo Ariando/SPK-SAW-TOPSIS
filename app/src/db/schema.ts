@@ -117,7 +117,11 @@ export const computationRuns = mysqlTable('computation_runs', {
   createdAt: datetime('created_at', { mode: 'date' }).notNull(),
 }, (t) => [
   index('ix_runs_method').on(t.method),
-  index('ix_runs_created_at').on(t.createdAt),
+  // Paginasi riwayat mengurutkan created_at menurun dengan id sebagai pemecah
+  // seri, dan pemilihan run terbaru per metode memfilter method lalu mengurutkan
+  // created_at. Dua indeks komposit di bawah melayani keduanya tanpa filesort.
+  index('ix_runs_created_id').on(t.createdAt, t.id),
+  index('ix_runs_method_created').on(t.method, t.createdAt, t.id),
 ]);
 
 export const computationResults = mysqlTable('computation_results', {
@@ -135,3 +139,41 @@ export const settings = mysqlTable('settings', {
   value: text('value'),
   updatedAt: datetime('updated_at', { mode: 'date' }).notNull(),
 }, (t) => [uniqueIndex('uq_settings_key').on(t.keyName)]);
+
+/**
+ * Skenario bobot hasil AHP. Disimpan terpisah dari tabel criteria supaya
+ * bobot master tidak tertimpa, sesuai keputusan pemilik produk. Bobot di sini
+ * bersifat usulan; pemakaiannya eksplisit lewat halaman hitung.
+ */
+export const weightScenarios = mysqlTable('weight_scenarios', {
+  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  name: varchar('name', { length: 160 }).notNull(),
+  method: varchar('method', { length: 24 }).notNull().default('ahp'),
+  /** Sidik masukan, dipakai untuk menandai skenario yang identik. */
+  inputHash: char('input_hash', { length: 64 }).notNull(),
+  /** Bobot ternormalisasi per kriteria, urut sesuai snapshot kriteria. */
+  weights: json('weights').notNull(),
+  /** Sidik kriteria yang dirujuk, agar skenario tidak dipakai pada kriteria lain. */
+  criteriaHash: char('criteria_hash', { length: 64 }).notNull(),
+  lambdaMax: decimal('lambda_max', { precision: 12, scale: 8 }),
+  consistencyIndex: decimal('consistency_index', { precision: 12, scale: 8 }),
+  consistencyRatio: decimal('consistency_ratio', { precision: 12, scale: 8 }),
+  consistent: boolean('consistent').notNull().default(false),
+  createdBy: varchar('created_by', { length: 36 }).notNull(),
+  createdAt: datetime('created_at', { mode: 'date' }).notNull(),
+}, (t) => [
+  index('ix_scenarios_method').on(t.method),
+  index('ix_scenarios_created').on(t.createdAt, t.id),
+]);
+
+/** Nilai segitiga atas perbandingan berpasangan untuk satu skenario. */
+export const pairwiseComparisons = mysqlTable('pairwise_comparisons', {
+  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+  scenarioId: bigint('scenario_id', { mode: 'number', unsigned: true }).notNull(),
+  rowCriterionId: bigint('row_criterion_id', { mode: 'number', unsigned: true }).notNull(),
+  colCriterionId: bigint('col_criterion_id', { mode: 'number', unsigned: true }).notNull(),
+  value: decimal('value', { precision: 12, scale: 8 }).notNull(),
+}, (t) => [
+  index('ix_pairwise_scenario').on(t.scenarioId),
+  uniqueIndex('uq_pairwise_pair').on(t.scenarioId, t.rowCriterionId, t.colCriterionId),
+]);

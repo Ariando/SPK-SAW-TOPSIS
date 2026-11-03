@@ -13,7 +13,7 @@ const isNumeric = (index: number) => index >= numericFrom;
 ---
 
 <div class="table-wrap">
-  <table class:list={['data-table', { 'data-table--dense': dense }]}>
+  <table class:list={['data-table', { 'data-table--dense': dense }]} aria-label={caption}>
     {caption && <caption>{caption}</caption>}
     <thead>
       <tr>

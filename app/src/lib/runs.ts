@@ -1,8 +1,8 @@
 import { defineAction, ActionError } from 'astro:actions';
 import { z } from 'astro/zod';
-import { asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import { db } from '../lib/guard';
-import { alternatives, computationResults, computationRuns, criteria } from '../db/schema';
+import { alternatives, computationResults, computationRuns } from '../db/schema';
 import { getMethod } from '../lib/dss/registry';
 import { loadMatrix } from '../lib/queries';
 import {
@@ -23,15 +23,20 @@ export {
   type SnapshotContent,
 } from '../lib/snapshot';
 
-async function buildSnapshot(methodId: string): Promise<{ content: SnapshotContent; createdAt: string }> {
+async function buildSnapshot(
+  methodId: string,
+  scenarioId?: number | null
+): Promise<{ content: SnapshotContent; createdAt: string }> {
   const method = getMethod(methodId);
   if (!method) throw new Error('Metode tidak dikenal');
 
-  const matrix = await loadMatrix(true);
+  const matrix = await loadMatrix({ onlyActive: true, scenarioId });
   if (matrix.missing.length > 0) throw new Error('Masih ada sel nilai kosong');
 
   const result = method.compute(matrix.input);
-  const altById = new Map(matrix.input.alternatives.map((a) => [a.id, a]));
+  const altById = new Map<number, { code: string; title: string }>(
+    matrix.input.alternatives.map((a) => [a.id, { code: a.code, title: a.title }])
+  );
 
   const scores: Record<string, number> = {};
   matrix.input.alternatives.forEach((alt, i) => {
@@ -42,7 +47,9 @@ async function buildSnapshot(methodId: string): Promise<{ content: SnapshotConte
 
   return {
     content: {
-      version: 1,
+      // Versi 2 menambahkan weightSource. Run lama tetap versi 1 dan tetap
+      // dapat dibuka, karena sidiknya tidak dihitung ulang dari versi baru.
+      version: 2,
       method: method.id,
       criteria: matrix.input.criteria.map((c) => ({
         code: c.code,
@@ -51,6 +58,7 @@ async function buildSnapshot(methodId: string): Promise<{ content: SnapshotConte
         direction: c.direction,
       })),
       rawWeightSum: matrix.weightSum,
+      weightSource: matrix.weightSource,
       alternatives: matrix.input.alternatives.map((a, i) => ({
         code: a.code,
         title: a.title,
@@ -76,8 +84,13 @@ async function buildSnapshot(methodId: string): Promise<{ content: SnapshotConte
   };
 }
 
-export async function saveRun(methodId: string, userId: string, note?: string) {
-  const built = await buildSnapshot(methodId);
+export async function saveRun(
+  methodId: string,
+  userId: string,
+  note?: string,
+  scenarioId?: number | null
+) {
+  const built = await buildSnapshot(methodId, scenarioId);
   // Angka dinormalkan sebelum di-hash dan disimpan, supaya isi yang tersimpan
   // identik dengan isi yang dihitung dan sidik tidak bergeser akibat
   // representasi double di MySQL.
@@ -117,8 +130,51 @@ export async function saveRun(methodId: string, userId: string, note?: string) {
   return { runId, hash, ranking: content.ranking };
 }
 
-export async function loadRuns(limit = 50) {
-  return db.select().from(computationRuns).orderBy(desc(computationRuns.createdAt)).limit(limit);
+export interface RunPage {
+  rows: (typeof computationRuns.$inferSelect)[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasPrev: boolean;
+  hasNext: boolean;
+}
+
+export const RUNS_PAGE_SIZE = 20;
+
+/**
+ * Riwayat dibaca bertahap. Tanpa batas halaman, catatan lama akan lolos dari
+ * jangkauan begitu jumlahnya melebihi batas muat, padahal datanya masih ada.
+ */
+export async function loadRunPage(requestedPage = 1, pageSize = RUNS_PAGE_SIZE): Promise<RunPage> {
+  const size = Math.min(Math.max(Math.trunc(pageSize) || RUNS_PAGE_SIZE, 1), 100);
+
+  const [countRow] = await db.select({ n: sql<number>`count(*)` }).from(computationRuns);
+  const total = Number(countRow?.n ?? 0);
+  const totalPages = Math.max(1, Math.ceil(total / size));
+  const page = Math.min(Math.max(Math.trunc(requestedPage) || 1, 1), totalPages);
+
+  const rows = await db
+    .select()
+    .from(computationRuns)
+    .orderBy(desc(computationRuns.createdAt), desc(computationRuns.id))
+    .limit(size)
+    .offset((page - 1) * size);
+
+  return {
+    rows,
+    page,
+    pageSize: size,
+    total,
+    totalPages,
+    hasPrev: page > 1,
+    hasNext: page < totalPages,
+  };
+}
+
+export async function loadAlternativeIds(): Promise<[string, number][]> {
+  const rows = await db.select({ id: alternatives.id, code: alternatives.code }).from(alternatives);
+  return rows.map((r) => [r.code, Number(r.id)] as [string, number]);
 }
 
 export async function loadRun(runId: number) {
@@ -141,6 +197,11 @@ export const runActions = {
         (value) => (value === null || value === undefined ? '' : value),
         z.string().trim().max(255)
       ),
+      // Kosong berarti memakai bobot master kriteria.
+      scenarioId: z.preprocess(
+        (value) => (value === null || value === undefined || value === '' ? null : value),
+        z.union([z.null(), z.coerce.number().int().positive()])
+      ),
     }),
     handler: async (input, context) => {
       const user = context.locals.user;
@@ -148,7 +209,7 @@ export const runActions = {
       if (user.role !== 'admin') throw new ActionError({ code: 'FORBIDDEN', message: 'Hanya pengelola yang boleh menyimpan hasil.' });
 
       try {
-        const saved = await saveRun(input.method, user.id, input.note || undefined);
+        const saved = await saveRun(input.method, user.id, input.note || undefined, input.scenarioId);
         return { ok: true, runId: saved.runId };
       } catch (error) {
         const raw = error instanceof Error ? error.message : String(error);
@@ -156,13 +217,11 @@ export const runActions = {
           ? 'Perhitungan belum bisa disimpan karena ada sel nilai yang kosong.'
           : raw.includes('Metode')
             ? 'Metode tidak dikenal.'
-            : 'Gagal menyimpan hasil. Periksa kembali data penilaian.';
+            : raw.includes('Skenario') || raw.includes('Consistency')
+              ? raw
+              : 'Gagal menyimpan hasil. Periksa kembali data penilaian.';
         throw new ActionError({ code: 'BAD_REQUEST', message: friendly });
       }
     },
   }),
 };
-
-export async function criteriaList() {
-  return db.select().from(criteria).orderBy(asc(criteria.code));
-}

@@ -2,6 +2,7 @@
 // Dijalankan: node scripts/smoke-crud.mjs [baseUrl]
 // Prasyarat: dev server berjalan, database sudah dimigrasi dan di-seed.
 
+import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
 const base = process.argv[2] ?? 'http://localhost:4321';
 const jar = new Map();
 
@@ -45,7 +46,7 @@ const postForm = (path, data) => {
   const r = await request('/api/auth/sign-in/username', {
     method: 'POST',
     headers: { 'content-type': 'application/json', origin: base },
-    body: JSON.stringify({ username: 'admin', password: 'TelaahAdmin2026' }),
+    body: JSON.stringify({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD }),
   });
   check('login admin', r.status === 200, String(r.status));
   if (r.status !== 200) {

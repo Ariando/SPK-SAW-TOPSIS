@@ -40,7 +40,7 @@ const actionError = savedAction?.error ?? removedAction?.error ?? toggleAction?.
 
     <section class="panel">
       <div class="panel__head">
-        <h2 class="panel__title">Daftar alternatif</h2>
+        <h2 class="panel__title" id="tabel-alternatif">Daftar alternatif</h2>
         <p class="panel__meta">{rows.length} proposal</p>
       </div>
 
@@ -53,7 +53,7 @@ const actionError = savedAction?.error ?? removedAction?.error ?? toggleAction?.
       ) : (
         <div class="panel__body panel__body--flush">
           <div class="table-wrap">
-            <table class="data-table">
+            <table class="data-table" aria-labelledby="tabel-alternatif">
               <thead>
                 <tr>
                   <th scope="col">Kode</th>

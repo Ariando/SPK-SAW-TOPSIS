@@ -21,9 +21,14 @@ const groups = [
     ],
   },
   {
+    label: 'Bobot',
+    items: [{ href: '/ahp', marker: 'W', text: 'AHP', match: '/ahp' }],
+  },
+  {
     label: 'Perhitungan',
     items: [
       { href: '/hitung', marker: 'M', text: 'Hitung', match: '/hitung' },
+      { href: '/sensitivitas', marker: 'S', text: 'Sensitivitas', match: '/sensitivitas' },
       { href: '/hasil', marker: 'R', text: 'Hasil', match: '/hasil' },
     ],
   },
@@ -104,7 +109,9 @@ const isActive = (match: string) => path === match || path.startsWith(match + '/
             <h1>{title}</h1>
             {lead && <p class="page-head__lead">{lead}</p>}
           </div>
-          <slot name="actions" />
+          <div class="page-head__actions">
+            <slot name="actions" />
+          </div>
         </div>
         <slot />
       </main>

@@ -18,6 +18,10 @@ const authInstance = createAuth({ databaseUrl, secret, baseUrl });
 const context = await authInstance.auth.$context;
 
 const EMAIL = 'peninjau@telaah.local';
+// Satu sumber kebenaran dengan uji otomatis. Ubah nilai bawaan di sini,
+// atau isi SEED_VIEWER_PASSWORD di .env.
+const VIEWER_USERNAME = process.env.SEED_VIEWER_USERNAME ?? 'peninjau';
+const VIEWER_PASSWORD = process.env.SEED_VIEWER_PASSWORD ?? 'TelaahTinjau2026';
 
 try {
   const existing = await db.select({ id: user.id }).from(user).where(eq(user.email, EMAIL)).limit(1);
@@ -29,12 +33,12 @@ try {
       {
         name: 'Peninjau Contoh',
         email: EMAIL,
-        username: 'peninjau',
-        password: 'TelaahTinjau2026',
+        username: VIEWER_USERNAME,
+        password: VIEWER_PASSWORD,
         role: 'viewer',
       }
     );
-    console.log('akun peninjau dibuat: peninjau / TelaahTinjau2026 (id ' + created.id + ')');
+    console.log('akun peninjau dibuat: ' + VIEWER_USERNAME + ' (id ' + created.id + ')');
   }
 } catch (error) {
   console.error('gagal membuat akun peninjau:', error instanceof Error ? error.message : error);

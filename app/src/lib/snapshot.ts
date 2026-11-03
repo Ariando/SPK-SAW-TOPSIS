@@ -31,6 +31,22 @@ export interface SnapshotRankEntry {
 }
 
 /**
+ * Asal bobot yang dipakai pada satu perhitungan.
+ *
+ * Wajib dicatat karena bobot bisa berasal dari dua tempat yang sangat berbeda:
+ * masukan manual di master kriteria, atau hasil perbandingan berpasangan AHP.
+ * Tanpa penanda ini, laporan tidak dapat menjelaskan darimana angka berasal.
+ */
+export interface SnapshotWeightSource {
+  source: 'criteria' | 'scenario';
+  /** Terisi hanya bila source = 'scenario'. */
+  scenarioId: number | null;
+  scenarioName: string | null;
+  /** Consistency Ratio skenario, bila bobot berasal dari AHP. */
+  scenarioCr: number | null;
+}
+
+/**
  * Isi snapshot yang menentukan hasil. Semua field di sini masuk ke sidik.
  * Metadata seperti waktu penyimpanan dan catatan sengaja berada di luar
  * struktur ini agar dua penyimpanan dengan data identik menghasilkan sidik
@@ -41,6 +57,8 @@ export interface SnapshotContent {
   method: string;
   criteria: SnapshotCriterion[];
   rawWeightSum: number;
+  /** Asal bobot. Ditambahkan pada versi 2. */
+  weightSource: SnapshotWeightSource;
   alternatives: SnapshotAlternative[];
   scores: Record<string, number>;
   ranking: SnapshotRankEntry[];
@@ -103,6 +121,37 @@ export function canonicalize(value: unknown): string {
 
 export function hashSnapshot(content: SnapshotContent): string {
   return createHash('sha256').update(canonicalize(content)).digest('hex');
+}
+
+/**
+ * Isi snapshot yang hanya mewakili masukan data, tanpa metode dan tanpa hasil.
+ *
+ * Hash snapshot penuh sengaja menyertakan nama metode, sehingga tiga metode
+ * yang dihitung dari data identik selalu menghasilkan hash berbeda. Untuk
+ * membandingkan hasil antar metode, yang perlu dibandingkan adalah data
+ * masukannya, bukan seluruh isi snapshot. Itulah fungsi hash ini.
+ */
+export interface SnapshotData {
+  version: number;
+  criteria: SnapshotCriterion[];
+  rawWeightSum: number;
+  alternatives: SnapshotAlternative[];
+  scores: Record<string, number>;
+}
+
+export function extractSnapshotData(content: SnapshotContent): SnapshotData {
+  return {
+    version: content.version,
+    criteria: content.criteria,
+    rawWeightSum: content.rawWeightSum,
+    alternatives: content.alternatives,
+    scores: content.scores,
+  };
+}
+
+/** Sidik masukan data. Dua run dengan sidik ini sama dihitung dari data yang sama. */
+export function hashSnapshotData(content: SnapshotContent): string {
+  return createHash('sha256').update(canonicalize(extractSnapshotData(content))).digest('hex');
 }
 
 export function splitSnapshot(snapshot: RunSnapshot): { content: SnapshotContent; createdAt: string } {

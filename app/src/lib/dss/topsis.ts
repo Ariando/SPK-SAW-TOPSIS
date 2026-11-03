@@ -120,6 +120,7 @@ function compute(input: DssInput): DssResult {
 
 export const topsis: DssMethod = {
   id: 'topsis',
+  description: 'Jarak ke solusi ideal positif dan negatif, lalu kedekatan relatif.',
   label: 'TOPSIS',
   inputMode: 'matrix',
   compute,

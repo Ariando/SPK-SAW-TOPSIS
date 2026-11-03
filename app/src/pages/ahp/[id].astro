@@ -1,0 +1,199 @@
+---
+import App from '../../layouts/App.astro';
+import StepTable from '../../components/StepTable.astro';
+import { db } from '../../lib/guard';
+import { loadScenario, loadCriteriaForAhp, scenarioMatchesCriteria } from '../../lib/ahp/scenario';
+import { computeAhp, CONSISTENCY_THRESHOLD, AhpValidationError } from '../../lib/ahp/ahp';
+import { formatDateTime, formatNumber } from '../../lib/format';
+
+const id = Number(Astro.params.id);
+if (!Number.isFinite(id) || id <= 0) return Astro.redirect('/ahp', 303);
+
+const scenario = await loadScenario(db, id);
+if (!scenario) return Astro.redirect('/ahp', 303);
+
+const criteriaList = await loadCriteriaForAhp(db);
+const matches = scenarioMatchesCriteria(scenario.criteriaHash, criteriaList);
+
+// Rekonstruksi matriks dari pasangan tersimpan, lalu hitung ulang.
+const idToIndex = new Map(criteriaList.map((c, i) => [c.id, i]));
+const n = criteriaList.length;
+let steps: { key: string; title: string; formula?: string; columns: string[]; rows: (string | number)[][]; note?: string }[] = [];
+let consistent: boolean | null = null;
+let cr: number | null = null;
+let weights: number[] = [];
+let recomputeError: string | null = null;
+
+if (matches && n >= 2) {
+  const matrix: number[][] = Array.from({ length: n }, () => new Array<number>(n).fill(1));
+  for (const pair of scenario.pairs) {
+    const i = idToIndex.get(pair.rowCriterionId);
+    const j = idToIndex.get(pair.colCriterionId);
+    if (i === undefined || j === undefined) continue;
+    matrix[i][j] = pair.value;
+    matrix[j][i] = 1 / pair.value;
+  }
+
+  try {
+    const result = computeAhp({ labels: criteriaList.map((c) => c.code), matrix });
+    steps = result.steps;
+    consistent = result.consistent;
+    cr = result.cr;
+    weights = result.weights;
+  } catch (error) {
+    recomputeError =
+      error instanceof AhpValidationError
+        ? error.issues.join(' ')
+        : error instanceof Error
+          ? error.message
+          : 'Perhitungan ulang gagal.';
+  }
+}
+
+const codeOf = (criterionId: number) => criteriaList.find((c) => c.id === criterionId)?.code ?? String(criterionId);
+---
+
+<App
+  title={`Skenario ${scenario.name}`}
+  page="AHP"
+  lead={`Dibuat ${formatDateTime(scenario.createdAt)} dari perbandingan berpasangan antar kriteria.`}
+>
+  <Fragment slot="actions">
+    <div class="cluster">
+      <a class="button button--quiet" href="/ahp">Kembali ke AHP</a>
+      <a class="button" href={`/api/pdf?halaman=${encodeURIComponent(`/ahp/${scenario.id}`)}`} target="_blank" rel="noopener">Unduh PDF</a>
+    </div>
+  </Fragment>
+
+  <div class="stack">
+    {!matches && (
+      <div class="notice notice--warning" role="status">
+        <span class="notice__title">Skenario tidak lagi cocok dengan kriteria</span>
+        Susunan kriteria berubah setelah skenario dibuat, sehingga bobot ini tidak dapat dipakai. Buat skenario baru
+        dari perbandingan yang sesuai kriteria saat ini.
+      </div>
+    )}
+
+    {recomputeError && (
+      <div class="notice notice--error" role="alert">
+        <span class="notice__title">Perhitungan ulang gagal</span>
+        {recomputeError}
+      </div>
+    )}
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title" id="tabel-bobot-ahp">Bobot hasil AHP</h2>
+        <p class="panel__meta">
+          {consistent === null ? 'tidak dihitung' : consistent ? 'Konsisten' : 'Tidak konsisten'}
+        </p>
+      </div>
+      <div class="panel__body panel__body--flush">
+        <div class="table-wrap">
+          <table class="data-table" aria-labelledby="tabel-bobot-ahp">
+            <thead>
+              <tr>
+                <th scope="col">Kode</th>
+                <th scope="col">Kriteria</th>
+                <th scope="col" class="num">Bobot</th>
+                <th scope="col" class="num">Persen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {criteriaList.map((c, i) => (
+                <tr>
+                  <td><span class="matrix-tag">{c.code}</span></td>
+                  <td>{c.name}</td>
+                  <td class="num">{weights[i] === undefined ? '-' : formatNumber(weights[i] * 100, 2)}</td>
+                  <td class="num">{weights[i] === undefined ? '-' : formatNumber(weights[i] * 100, 1) + '%'}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2">Total</td>
+                <td class="num">{weights.length === 0 ? '-' : formatNumber(100, 2)}</td>
+                <td class="num">100%</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    {cr !== null && (
+      <div class:list={['notice', consistent ? 'notice--success' : 'notice--error']} role="status">
+        <span class="notice__title">
+          Consistency Ratio {formatNumber(cr, 4)} {consistent ? 'di bawah' : 'mencapai atau melewati'} ambang{' '}
+          {CONSISTENCY_THRESHOLD}
+        </span>
+        {consistent
+          ? 'Penilaian berpasangan tidak saling bertentangan, sehingga bobot dapat dipakai.'
+          : 'Penilaian saling bertentangan. Perbaiki perbandingan yang paling tidak konsisten, lalu simpan skenario baru.'}
+      </div>
+    )}
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title" id="tabel-pasangan">Pasangan yang disimpan</h2>
+        <p class="panel__meta">{scenario.pairs.length} pasangan</p>
+      </div>
+      <div class="panel__body panel__body--flush">
+        <div class="table-wrap">
+          <table class="data-table" aria-labelledby="tabel-pasangan">
+            <thead>
+              <tr>
+                <th scope="col">Kriteria</th>
+                <th scope="col">Dibandingkan</th>
+                <th scope="col" class="num">Nilai</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scenario.pairs.map((pair) => (
+                <tr>
+                  <th scope="row"><span class="matrix-tag">{codeOf(pair.rowCriterionId)}</span></th>
+                  <td><span class="matrix-tag">{codeOf(pair.colCriterionId)}</span></td>
+                  <td class="num">{formatNumber(pair.value, 4)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    {steps.length > 0 && (
+      <section aria-labelledby="langkah-ahp">
+        <h2 id="langkah-ahp" style="margin-bottom: var(--space-3);">Jejak perhitungan</h2>
+        <ol class="step-list">
+          {steps.map((step, index) => (
+            <li>
+              <section class="panel">
+                <div class="panel__head">
+                  <h3 class="panel__title">
+                    <span class="step-index">{String(index + 1).padStart(2, '0')}</span>
+                    {step.title}
+                  </h3>
+                </div>
+                <div class="panel__body">
+                  {step.formula && <p class="formula">{step.formula}</p>}
+                  {step.note && <p class="muted small mt-4">{step.note}</p>}
+                  <div class="mt-4">
+                    <StepTable
+                      columns={step.columns}
+                      rows={step.rows}
+                      numericFrom={1}
+                      highlight
+                      dense={step.rows.length > 8}
+                      caption={`${step.title}, AHP`}
+                    />
+                  </div>
+                </div>
+              </section>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
+  </div>
+</App>

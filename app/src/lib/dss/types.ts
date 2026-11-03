@@ -44,12 +44,21 @@ export interface DssResult {
   scores: { alternativeId: number; value: number }[];
   ranking: RankedScore[];
   warnings: string[];
+  /**
+   * Arah penilaian. Sebagian besar metode memberi nilai lebih besar lebih
+   * baik. VIKOR sebaliknya: Q terkecil adalah alternatif terbaik.
+   */
+  higherIsBetter: boolean;
 }
 
 export interface DssMethod {
   id: string;
   label: string;
+  /** Satu kalimat untuk pemilih metode, menjelaskan pendekatannya. */
+  description: string;
   inputMode: 'matrix' | 'pairwise';
+  /** Default true. VIKOR memakai false. */
+  higherIsBetter?: boolean;
   compute(input: DssInput): DssResult;
 }
 
@@ -144,9 +153,12 @@ export function column(values: number[][], j: number): number[] {
 }
 
 export function rankScores(
-  scores: { alternativeId: number; value: number }[]
+  scores: { alternativeId: number; value: number }[],
+  higherIsBetter = true
 ): RankedScore[] {
-  const sortedValues = [...new Set(scores.map((s) => round(s.value, 9)))].sort((a, b) => b - a);
+  const sortedValues = [...new Set(scores.map((s) => round(s.value, 9)))].sort((a, b) =>
+    higherIsBetter ? b - a : a - b
+  );
   return scores.map((s) => {
     const value = round(s.value, 9);
     const tied = scores.filter((o) => Math.abs(round(o.value, 9) - value) < EPSILON).length > 1;
@@ -165,7 +177,8 @@ export function buildResult(
   prepared: PreparedInput,
   steps: TraceStep[],
   rawScores: { alternativeId: number; value: number }[],
-  warnings: string[] = []
+  warnings: string[] = [],
+  higherIsBetter = true
 ): DssResult {
   const warning = weightWarning(prepared);
   return {
@@ -173,8 +186,9 @@ export function buildResult(
     label,
     steps,
     scores: rawScores,
-    ranking: rankScores(rawScores),
+    ranking: rankScores(rawScores, higherIsBetter),
     warnings: warning ? [warning, ...warnings] : warnings,
+    higherIsBetter,
   };
 }
 

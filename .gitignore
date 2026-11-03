@@ -1,2 +1,24 @@
-/system
-/vendor
+# Dependensi aplikasi
+node_modules/
+
+# Hasil build
+dist/
+.astro/
+
+# Konfigurasi lingkungan, jangan pernah di-commit
+.env
+.env.local
+.env.*.local
+
+# Berkas sementara dan log
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Data lokal
+*.sqlite
+*.db

@@ -93,6 +93,7 @@ function compute(input: DssInput): DssResult {
 
 export const wp: DssMethod = {
   id: 'wp',
+  description: 'Perkalian berpangkat dengan bobot ternormalisasi. Peka terhadap perbedaan rasio antar nilai.',
   label: 'WP',
   inputMode: 'matrix',
   compute,

@@ -4,6 +4,8 @@ import { eq } from 'drizzle-orm';
 import { db } from '../lib/guard';
 import { alternatives, criteria, rubrics, scores } from '../db/schema';
 import { runActions } from '../lib/runs';
+import { AhpValidationError } from '../lib/ahp/ahp';
+import { deleteScenario, saveScenario } from '../lib/ahp/scenario';
 
 function adminOnly(user: App.Locals['user']) {
   if (!user) throw new ActionError({ code: 'UNAUTHORIZED', message: 'Sesi tidak ditemukan.' });
@@ -304,4 +306,66 @@ export const server = {
   },
 
   runs: runActions,
+
+  ahp: {
+    save: defineAction({
+      accept: 'form',
+      input: z.object({
+        name: z.string().trim().min(3, 'Nama skenario minimal 3 karakter').max(160),
+        // Nilai segitiga atas dikirim sebagai JSON array agar jumlahnya bebas
+        // mengikuti jumlah kriteria.
+        upper: z.string().min(2, 'Nilai perbandingan belum dikirim'),
+      }),
+      handler: async (input, context) => {
+        const user = adminOnly(context.locals.user);
+
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(input.upper);
+        } catch {
+          throw new ActionError({ code: 'BAD_REQUEST', message: 'Format nilai perbandingan tidak sah.' });
+        }
+
+        const values = z.array(z.coerce.number().positive().max(1000)).safeParse(parsed);
+        if (!values.success) {
+          throw new ActionError({
+            code: 'BAD_REQUEST',
+            message: 'Nilai perbandingan harus angka positif, skala 1 sampai 9 atau kebalikannya.',
+          });
+        }
+
+        try {
+          const saved = await saveScenario(db, {
+            name: input.name,
+            upper: values.data,
+            createdBy: user.id,
+          });
+          return {
+            ok: true,
+            scenarioId: saved.scenarioId,
+            consistent: saved.result.consistent,
+            cr: saved.result.cr,
+          };
+        } catch (error) {
+          if (error instanceof AhpValidationError) {
+            throw new ActionError({ code: 'BAD_REQUEST', message: error.issues.join(' ') });
+          }
+          throw new ActionError({
+            code: 'BAD_REQUEST',
+            message: error instanceof Error ? error.message : 'Skenario gagal disimpan.',
+          });
+        }
+      },
+    }),
+
+    remove: defineAction({
+      accept: 'form',
+      input: z.object({ id: z.coerce.number().int().positive() }),
+      handler: async (input, context) => {
+        adminOnly(context.locals.user);
+        await deleteScenario(db, input.id);
+        return { ok: true };
+      },
+    }),
+  },
 };

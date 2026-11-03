@@ -2,6 +2,7 @@
 import App from '../layouts/App.astro';
 import { db } from '../lib/guard';
 import { alternatives, criteria, scores } from '../db/schema';
+import { methods } from '../lib/dss/registry';
 import { sql } from 'drizzle-orm';
 
 const [criteriaCount] = await db.select({ n: sql<number>`count(*)` }).from(criteria);
@@ -56,7 +57,7 @@ const stats = [
     <section class="panel">
       <div class="panel__head">
         <h2 class="panel__title">Metode tersedia</h2>
-        <p class="panel__meta">SAW, WP, TOPSIS</p>
+        <p class="panel__meta">{methods.length} metode</p>
       </div>
       <div class="panel__body">
         <div class="table-wrap">
@@ -66,25 +67,17 @@ const stats = [
               <tr>
                 <th scope="col">Metode</th>
                 <th scope="col">Pendekatan</th>
-                <th scope="col">Keluaran</th>
+                <th scope="col">Arah nilai</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <th scope="row">SAW</th>
-                <td>Penjumlahan terbobot setelah normalisasi proporsional</td>
-                <td class="num">V dari 0 sampai total bobot</td>
-              </tr>
-              <tr>
-                <th scope="row">WP</th>
-                <td>Perkalian berpangkat dengan bobot ternormalisasi</td>
-                <td class="num">V dari 0 sampai 1, jumlah 1</td>
-              </tr>
-              <tr>
-                <th scope="row">TOPSIS</th>
-                <td>Jarak ke solusi ideal positif dan negatif</td>
-                <td class="num">V dari 0 sampai 1</td>
-              </tr>
+              {methods.map((m) => (
+                <tr>
+                  <th scope="row">{m.label}</th>
+                  <td>{m.description}</td>
+                  <td>{m.higherIsBetter === false ? 'Terkecil terbaik' : 'Terbesar terbaik'}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

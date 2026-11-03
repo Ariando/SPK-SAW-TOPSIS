@@ -19,6 +19,12 @@ const DEMO_CRITERIA = [
   { code: 'C4', name: 'Beban biaya dan waktu', weight: '0.2500', direction: 'cost' as const, sortOrder: 4 },
 ];
 
+// Kata sandi akun awal. Bisa ditimpa lewat lingkungan tanpa mengubah berkas,
+// supaya nilai di database dan nilai yang dicetak tidak pernah berbeda.
+// Ubah nilai bawaan di sini, atau isi SEED_ADMIN_PASSWORD di .env.
+const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME ?? 'admin';
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'Mbgindonesia@2026';
+
 const RUBRIC_SCALE = [
   { label: 'Sangat kurang', value: '1.0000' },
   { label: 'Kurang', value: '2.0000' },
@@ -49,13 +55,14 @@ async function seedAdmin() {
     {
       name: 'Pengelola TELAAH',
       email: 'admin@telaah.local',
-      username: 'admin',
-      password: 'TelaahAdmin2026',
+      username: ADMIN_USERNAME,
+      password: ADMIN_PASSWORD,
       role: 'admin',
     }
   );
 
-  console.log('akun admin dibuat: admin / TelaahAdmin2026 (id ' + created.id + ')');
+  console.log('akun admin dibuat: ' + ADMIN_USERNAME + ' (id ' + created.id + ')');
+  console.log('kata sandi diambil dari SEED_ADMIN_PASSWORD bila diisi, jika tidak memakai nilai bawaan di berkas ini.');
 }
 
 async function seedCriteria() {

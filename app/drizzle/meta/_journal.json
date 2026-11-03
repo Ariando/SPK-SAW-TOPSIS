@@ -8,6 +8,20 @@
       "when": 1792745743301,
       "tag": "0000_certain_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1792988494750,
+      "tag": "0001_nostalgic_puppet_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1793004216464,
+      "tag": "0002_cuddly_blazing_skull",
+      "breakpoints": true
     }
   ]
 }

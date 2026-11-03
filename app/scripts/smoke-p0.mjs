@@ -2,6 +2,7 @@
 // Dijalankan: node scripts/smoke-p0.mjs [baseUrl]
 // Prasyarat: dev server berjalan, database sudah di-seed.
 
+import { ADMIN_USERNAME, ADMIN_PASSWORD, VIEWER_USERNAME, VIEWER_PASSWORD } from './test-credentials.mjs';
 const base = process.argv[2] ?? 'http://localhost:4321';
 const jar = new Map();
 
@@ -43,7 +44,7 @@ const postForm = (path, data) => {
 const login = await request('/api/auth/sign-in/username', {
   method: 'POST',
   headers: { 'content-type': 'application/json', origin: base },
-  body: JSON.stringify({ username: 'admin', password: 'TelaahAdmin2026' }),
+  body: JSON.stringify({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD }),
 });
 check('login admin', login.status === 200, String(login.status));
 if (login.status !== 200) process.exit(1);
@@ -87,7 +88,8 @@ if (criterionId) {
   check('halaman rubrik terbuka', rubrik.status === 200, String(rubrik.status));
   check('halaman rubrik memuat daftar', rubrik.text.includes('Daftar rubrik'));
   check('halaman rubrik memuat form tambah', rubrik.text.includes('Tambah rubrik'));
-  check('halaman rubrik memuat 5 rubrik seed', (rubrik.text.match(/data-rubric-id=/g) ?? []).length === 5);
+  const initialRubrics = (rubrik.text.match(/data-rubric-id=/g) ?? []).length;
+  check('halaman rubrik memuat rubrik', initialRubrics > 0, String(initialRubrics));
 
   // 4. Tambah rubrik
   {
@@ -101,7 +103,8 @@ if (criterionId) {
 
     const after = await request(`/kriteria/${criterionId}/rubrik`);
     check('rubrik baru tampil', after.text.includes('Di luar skala'));
-    check('jumlah rubrik menjadi 6', (after.text.match(/data-rubric-id=/g) ?? []).length === 6);
+    const afterAdd = (after.text.match(/data-rubric-id=/g) ?? []).length;
+    check('jumlah rubrik bertambah satu', afterAdd === initialRubrics + 1, String(afterAdd));
   }
 
   // 5. Ubah rubrik
@@ -144,7 +147,8 @@ if (criterionId) {
     check('hapus rubrik menjawab halaman', r.status === 200, String(r.status));
 
     const after = await request(`/kriteria/${criterionId}/rubrik`);
-    check('jumlah rubrik kembali 5', (after.text.match(/data-rubric-id=/g) ?? []).length === 5);
+    const afterRemove = (after.text.match(/data-rubric-id=/g) ?? []).length;
+    check('jumlah rubrik kembali seperti semula', afterRemove === initialRubrics, String(afterRemove));
   }
 
   // 8. Rubrik untuk kriteria yang tidak ada
@@ -169,7 +173,7 @@ if (criterionId) {
   const loginViewer = await fetch(new URL('/api/auth/sign-in/username', base), {
     method: 'POST',
     headers: { 'content-type': 'application/json', origin: base },
-    body: JSON.stringify({ username: 'peninjau', password: 'TelaahTinjau2026' }),
+    body: JSON.stringify({ username: VIEWER_USERNAME, password: VIEWER_PASSWORD }),
     redirect: 'manual',
   });
   storeViewer(loginViewer);

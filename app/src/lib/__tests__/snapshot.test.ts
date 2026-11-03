@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   canonicalize,
+  extractSnapshotData,
   hashSnapshot,
+  hashSnapshotData,
   normalizeNumbers,
   splitSnapshot,
   verifySnapshotHash,
@@ -18,6 +20,12 @@ const baseContent: SnapshotContent = {
     { code: 'C2', name: 'Biaya', weight: 0.7, direction: 'cost' },
   ],
   rawWeightSum: 1,
+  weightSource: {
+    source: 'criteria',
+    scenarioId: null,
+    scenarioName: null,
+    scenarioCr: null,
+  },
   alternatives: [
     { code: 'A1', title: 'Proposal satu', values: [4, 2] },
     { code: 'A2', title: 'Proposal dua', values: [2, 4] },
@@ -66,18 +74,11 @@ describe('sidik snapshot', () => {
   });
 
   it('urutan kunci objek tidak mengubah sidik', () => {
-    const reordered = {
-      warnings: baseContent.warnings,
-      ranking: baseContent.ranking,
-      scores: baseContent.scores,
-      alternatives: baseContent.alternatives,
-      rawWeightSum: baseContent.rawWeightSum,
-      criteria: baseContent.criteria,
-      method: baseContent.method,
-      version: baseContent.version,
-    } as SnapshotContent;
+    const reversed = Object.fromEntries(
+      Object.entries(baseContent).reverse()
+    ) as unknown as SnapshotContent;
 
-    expect(hashSnapshot(reordered)).toBe(hashSnapshot(baseContent));
+    expect(hashSnapshot(reversed)).toBe(hashSnapshot(baseContent));
   });
 
   it('urutan array tetap berpengaruh', () => {
@@ -150,5 +151,59 @@ describe('sidik snapshot', () => {
 
   it('presisi snapshot paling sedikit 8 desimal untuk kebutuhan simpan', () => {
     expect(SNAPSHOT_PRECISION).toBeGreaterThanOrEqual(8);
+  });
+});
+
+describe('sidik masukan data', () => {
+  it('tiga metode dari data yang sama memiliki sidik data yang sama', () => {
+    const saw = { ...clone(baseContent), method: 'saw' };
+    const wp = { ...clone(baseContent), method: 'wp' };
+    const topsis = { ...clone(baseContent), method: 'topsis' };
+
+    expect(hashSnapshotData(saw)).toBe(hashSnapshotData(wp));
+    expect(hashSnapshotData(wp)).toBe(hashSnapshotData(topsis));
+  });
+
+  it('sidik snapshot penuh berbeda antar metode, sidik data tetap sama', () => {
+    const saw = { ...clone(baseContent), method: 'saw' };
+    const wp = { ...clone(baseContent), method: 'wp' };
+
+    expect(hashSnapshot(saw)).not.toBe(hashSnapshot(wp));
+    expect(hashSnapshotData(saw)).toBe(hashSnapshotData(wp));
+  });
+
+  it('sidik data berubah bila nilai berubah', () => {
+    const changed = clone(baseContent);
+    changed.scores['A1:C1'] = 5;
+    expect(hashSnapshotData(changed)).not.toBe(hashSnapshotData(baseContent));
+  });
+
+  it('sidik data berubah bila bobot berubah', () => {
+    const changed = clone(baseContent);
+    changed.criteria[0].weight = 0.35;
+    expect(hashSnapshotData(changed)).not.toBe(hashSnapshotData(baseContent));
+  });
+
+  it('sidik data tidak terpengaruh perubahan hasil peringkat', () => {
+    const changed = clone(baseContent);
+    changed.ranking[0].rank = 2;
+    changed.ranking[1].rank = 1;
+    changed.warnings.push('peringatan baru');
+    expect(hashSnapshotData(changed)).toBe(hashSnapshotData(baseContent));
+  });
+
+  it('extractSnapshotData membuang metode, hasil, dan peringatan', () => {
+    const data = extractSnapshotData(baseContent);
+    expect(data).not.toHaveProperty('method');
+    expect(data).not.toHaveProperty('ranking');
+    expect(data).not.toHaveProperty('warnings');
+    expect(data.criteria).toHaveLength(2);
+    expect(data.alternatives).toHaveLength(2);
+  });
+
+  it('sidik data tetap sama untuk snapshot dengan createdAt berbeda', () => {
+    const a: RunSnapshot = { ...clone(baseContent), method: 'saw', createdAt: '2026-01-01T00:00:00.000Z' };
+    const b: RunSnapshot = { ...clone(baseContent), method: 'saw', createdAt: '2026-10-23T10:00:00.000Z' };
+    expect(hashSnapshotData(a)).toBe(hashSnapshotData(b));
   });
 });

@@ -60,12 +60,16 @@
 
     --ink: #1b1d2a;
     --ink-muted: #5a5f70;
-    --ink-faint: #7d8294;
+    /* Sebelumnya #7d8294, hanya 3,82:1 di atas putih. Nilai ini memberi
+       5,23:1 di putih dan 4,84:1 di sunken, dengan jarak aman dari ambang. */
+    --ink-faint: #676c7c;
 
     --surface: #ffffff;
     --surface-sunken: #f5f6f9;
     --line: #d8dae4;
-    --line-strong: #b9bdcc;
+    /* Batas komponen interaktif wajib 3:1. #b9bdcc hanya 1,87:1 sehingga
+       batas tombol dan input nyaris tak terlihat. Nilai ini memberi 3,72:1. */
+    --line-strong: #7e8499;
 
     --danger: #a3271f;
     --danger-soft: #fbeceb;
@@ -300,6 +304,13 @@
     padding-bottom: var(--space-3);
     border-bottom: 1px solid var(--line);
     margin-bottom: var(--space-5);
+  }
+
+  .page-head__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
   }
 
   .page-head__lead {
@@ -797,10 +808,27 @@
   }
 }
 
+/* Menghormati permintaan sistem untuk mengurangi gerak. Transisi di aplikasi
+   ini hanya hover dan fokus, tetapi tetap dimatikan agar tidak ada gerak
+   yang tidak diminta. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @media print {
   .masthead,
   .nav,
   .page-footer,
+  /* Tombol aksi di kepala halaman, misalnya tautan unduh PDF dan kembali.
+     Tidak berguna di kertas, dan tautan PDF akan mencetak dirinya sendiri. */
+  .page-head__actions,
   .no-print {
     display: none !important;
   }

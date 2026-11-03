@@ -1,19 +1,47 @@
 ---
 import App from '../../layouts/App.astro';
-import { loadMatrix } from '../../lib/queries';
+import { loadMatrix, loadWeightOptions } from '../../lib/queries';
 import { methods } from '../../lib/dss/registry';
 import { formatNumber } from '../../lib/format';
 
-const matrix = await loadMatrix(true);
+// Pemilihan skenario dibaca dari query string, sehingga seluruh tautan
+// "Hitung" di halaman ini membawa pilihan yang sama. Ini menghindari
+// JavaScript dan tetap dapat di-bookmark serta dicetak.
+const rawScenario = Astro.url.searchParams.get('skenario');
+const requestedScenarioId = rawScenario ? Number(rawScenario) : null;
+
+const options = await loadWeightOptions();
+const usableScenarios = options.filter((o) => o.usable);
+
+// Skenario yang diminta tetapi tidak layak tidak dipakai diam-diam.
+const rejectedScenario =
+  requestedScenarioId !== null
+    ? usableScenarios.find((o) => o.id === requestedScenarioId) === undefined
+      ? options.find((o) => o.id === requestedScenarioId) ?? null
+      : null
+    : null;
+
+const activeScenarioId =
+  requestedScenarioId !== null && usableScenarios.some((o) => o.id === requestedScenarioId)
+    ? requestedScenarioId
+    : null;
+
+const matrix = await loadMatrix({ onlyActive: true, scenarioId: activeScenarioId });
 const activeMethods = methods.filter((m) => m.inputMode === 'matrix');
 
 const canCompute =
   matrix.missing.length === 0 &&
   matrix.input.criteria.length > 0 &&
   matrix.input.alternatives.length >= 2;
+
+const scenarioQuery = activeScenarioId === null ? '' : '?skenario=' + activeScenarioId;
 ---
 
 <App title="Hitung" page="Hitung" lead="Pilih metode. Semua metode memakai matriks nilai yang sama, sehingga hasilnya bisa dibandingkan.">
+  <Fragment slot="actions">
+    <a class="button button--quiet" href="/hasil/bandingkan">Bandingkan metode</a>
+  </Fragment>
+
   <div class="stack">
     {!canCompute && (
       <div class="notice notice--warning" role="status">
@@ -30,14 +58,72 @@ const canCompute =
       </div>
     )}
 
+    {rejectedScenario && (
+      <div class="notice notice--warning" role="status">
+        <span class="notice__title">Skenario "{rejectedScenario.name}" tidak dapat dipakai</span>
+        {!rejectedScenario.consistent
+          ? 'Skenario ini ditandai tidak konsisten saat dibuat.'
+          : !rejectedScenario.matchesCriteria
+            ? 'Skenario dibuat dari susunan kriteria yang berbeda.'
+            : 'Consistency Ratio skenario mencapai atau melewati ambang 0,1.'}
+        Perhitungan di bawah memakai bobot kriteria, bukan bobot skenario itu.
+        <div class="mt-4">
+          <a class="button button--quiet" href="/hitung">Pakai bobot kriteria</a>
+        </div>
+      </div>
+    )}
+
     <section class="panel">
       <div class="panel__head">
-        <h2 class="panel__title">Metode tersedia</h2>
+        <h2 class="panel__title" id="pilih-bobot">Bobot yang dipakai</h2>
+        <p class="panel__meta">
+          {matrix.weightSource.source === 'scenario' ? 'Skenario AHP' : 'Bobot kriteria'}
+        </p>
+      </div>
+      <div class="panel__body">
+        {usableScenarios.length === 0 ? (
+          <p class="muted small">
+            Belum ada skenario AHP yang layak dipakai. Bobot diambil dari master kriteria. Untuk memakai bobot AHP,
+            buat skenario dengan CR di bawah 0,1 di <a href="/ahp">halaman AHP</a>.
+          </p>
+        ) : (
+          <form method="get" action="/hitung" class="cluster">
+            <div class="field" style="max-width: 34ch;">
+              <label class="field__label" for="skenario">Sumber bobot</label>
+              <select class="select" id="skenario" name="skenario">
+                <option value="" selected={activeScenarioId === null}>Bobot kriteria</option>
+                {usableScenarios.map((o) => (
+                  <option value={o.id} selected={activeScenarioId === o.id}>
+                    {o.name} (CR {formatNumber(o.consistencyRatio ?? 0, 4)})
+                  </option>
+                ))}
+              </select>
+              <p class="field__hint">
+                Hanya skenario konsisten dan cocok dengan kriteria saat ini yang muncul di sini.
+              </p>
+            </div>
+            <button class="button" type="submit">Terapkan</button>
+          </form>
+        )}
+
+        {matrix.weightSource.source === 'scenario' && (
+          <p class="notice notice--info mt-4" role="status">
+            Memakai skenario <strong>{matrix.weightSource.scenarioName}</strong> dengan CR{' '}
+            {formatNumber(matrix.weightSource.scenarioCr ?? 0, 4)}. Asal bobot ini akan tercatat pada hasil yang
+            disimpan.
+          </p>
+        )}
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title" id="tabel-metode">Metode tersedia</h2>
         <p class="panel__meta">{matrix.input.alternatives.length} alternatif · {matrix.input.criteria.length} kriteria</p>
       </div>
       <div class="panel__body">
         <div class="table-wrap">
-          <table class="data-table">
+          <table class="data-table" aria-labelledby="tabel-metode">
             <thead>
               <tr>
                 <th scope="col">Metode</th>
@@ -48,15 +134,16 @@ const canCompute =
             <tbody>
               {activeMethods.map((m) => (
                 <tr>
-                  <th scope="row">{m.label}</th>
-                  <td class="muted small">
-                    {m.id === 'saw' && 'Normalisasi proporsional lalu penjumlahan terbobot.'}
-                    {m.id === 'wp' && 'Perkalian berpangkat dengan bobot ternormalisasi.'}
-                    {m.id === 'topsis' && 'Jarak ke solusi ideal positif dan negatif.'}
-                  </td>
+                  <th scope="row">
+                    {m.label}
+                    {m.higherIsBetter === false && (
+                      <span class="muted small" style="display:block; font-weight:400;">nilai terkecil terbaik</span>
+                    )}
+                  </th>
+                  <td class="muted small">{m.description}</td>
                   <td>
                     {canCompute ? (
-                      <a class="button" href={`/hitung/${m.id}`}>Hitung {m.label}</a>
+                      <a class="button" href={`/hitung/${m.id}${scenarioQuery}`}>Hitung {m.label}</a>
                     ) : (
                       <span class="muted small">Menunggu data lengkap</span>
                     )}
@@ -71,11 +158,11 @@ const canCompute =
 
     <section class="panel">
       <div class="panel__head">
-        <h2 class="panel__title">Bobot yang akan dipakai</h2>
+        <h2 class="panel__title" id="tabel-bobot-hitung">Bobot yang akan dipakai</h2>
       </div>
       <div class="panel__body panel__body--flush">
         <div class="table-wrap">
-          <table class="data-table">
+          <table class="data-table" aria-labelledby="tabel-bobot-hitung">
             <thead>
               <tr>
                 <th scope="col">Kriteria</th>

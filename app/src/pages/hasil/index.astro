@@ -1,13 +1,24 @@
 ---
 import App from '../../layouts/App.astro';
-import { loadRuns } from '../../lib/runs';
+import { loadRunPage, RUNS_PAGE_SIZE } from '../../lib/runs';
 import { formatDateTime, formatNumber } from '../../lib/format';
 
-const runs = await loadRuns(100);
-const altCount = runs.length;
+const requested = Number(Astro.url.searchParams.get('halaman') ?? '1');
+const result = await loadRunPage(Number.isFinite(requested) ? requested : 1, RUNS_PAGE_SIZE);
+const runs = result.rows;
+
+const pageHref = (page: number) => (page <= 1 ? '/hasil' : `/hasil?halaman=${page}`);
 ---
 
-<App title="Riwayat hasil" page="Hasil" lead="Setiap penyimpanan menghasilkan satu catatan tetap. Hasil lama tetap dapat dibuka walau data master berubah.">
+<App
+  title="Riwayat hasil"
+  page="Hasil"
+  lead="Setiap penyimpanan menghasilkan satu catatan tetap. Hasil lama tetap dapat dibuka walau data master berubah."
+>
+  <Fragment slot="actions">
+    <a class="button" href="/hasil/bandingkan">Bandingkan metode</a>
+  </Fragment>
+
   <div class="stack">
     {runs.length === 0 ? (
       <section class="panel">
@@ -22,12 +33,15 @@ const altCount = runs.length;
     ) : (
       <section class="panel">
         <div class="panel__head">
-          <h2 class="panel__title">Daftar perhitungan</h2>
-          <p class="panel__meta">{altCount} catatan</p>
+          <h2 class="panel__title" id="tabel-riwayat">Daftar perhitungan</h2>
+          <p class="panel__meta">
+            Menampilkan {runs.length} dari {result.total} catatan
+            {result.totalPages > 1 && `, halaman ${result.page} dari ${result.totalPages}`}
+          </p>
         </div>
         <div class="panel__body panel__body--flush">
           <div class="table-wrap">
-            <table class="data-table">
+            <table class="data-table" aria-labelledby="tabel-riwayat">
               <thead>
                 <tr>
                   <th scope="col">Waktu</th>
@@ -45,7 +59,7 @@ const altCount = runs.length;
                   };
                   const first = snapshot.ranking?.[0];
                   return (
-                    <tr>
+                    <tr data-run-id={run.id}>
                       <td class="nowrap">{formatDateTime(run.createdAt)}</td>
                       <td>{run.method.toUpperCase()}</td>
                       <td>
@@ -70,7 +84,42 @@ const altCount = runs.length;
             </table>
           </div>
         </div>
+
+        {result.totalPages > 1 && (
+          <nav class="pager" aria-label="Navigasi halaman riwayat">
+            {result.hasPrev ? (
+              <a class="button" href={pageHref(result.page - 1)} rel="prev">Sebelumnya</a>
+            ) : (
+              <span class="button" aria-disabled="true">Sebelumnya</span>
+            )}
+
+            <span class="pager__status">Halaman {result.page} dari {result.totalPages}</span>
+
+            {result.hasNext ? (
+              <a class="button" href={pageHref(result.page + 1)} rel="next">Berikutnya</a>
+            ) : (
+              <span class="button" aria-disabled="true">Berikutnya</span>
+            )}
+          </nav>
+        )}
       </section>
     )}
   </div>
 </App>
+
+<style>
+  .pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--line);
+  }
+
+  .pager__status {
+    font-size: var(--step-1);
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+</style>

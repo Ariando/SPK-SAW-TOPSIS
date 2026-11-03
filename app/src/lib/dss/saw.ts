@@ -87,6 +87,7 @@ function compute(input: DssInput): DssResult {
 
 export const saw: DssMethod = {
   id: 'saw',
+  description: 'Normalisasi proporsional lalu penjumlahan terbobot. Paling sederhana dan paling banyak dipakai.',
   label: 'SAW',
   inputMode: 'matrix',
   compute,

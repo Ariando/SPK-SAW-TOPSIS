@@ -10,13 +10,31 @@ import { actions } from 'astro:actions';
 const method = getMethod(Astro.params.method ?? '');
 if (!method) return Astro.redirect('/hitung', 303);
 
-const matrix = await loadMatrix(true);
+// Skenario bobot dibawa lewat query string, sama seperti tautan dari halaman
+// hitung. Bila skenario tidak layak, loadMatrix menolak dan halaman dialihkan
+// kembali agar pengguna memilih ulang, bukan menghitung dengan bobot berbeda
+// tanpa sadar.
+const rawScenario = Astro.url.searchParams.get('skenario');
+const scenarioId = rawScenario ? Number(rawScenario) : null;
+
+let matrix;
+try {
+  matrix = await loadMatrix({ onlyActive: true, scenarioId });
+} catch {
+  return Astro.redirect('/hitung?skenario=' + (rawScenario ?? ''), 303);
+}
+
 const ready =
   matrix.missing.length === 0 &&
   matrix.input.criteria.length > 0 &&
   matrix.input.alternatives.length >= 2;
 
 if (!ready) return Astro.redirect('/hitung', 303);
+
+const scenarioField =
+  matrix.weightSource.source === 'scenario' && matrix.weightSource.scenarioId !== null
+    ? String(matrix.weightSource.scenarioId)
+    : '';
 
 const result = method.compute(matrix.input);
 const ranking = sortedRanking(result);
@@ -31,13 +49,14 @@ const numericFrom = 1;
 <App
   title={`Perhitungan ${method.label}`}
   page="Hitung"
-  lead={`${matrix.input.alternatives.length} alternatif, ${criteria.length} kriteria, ${method.label} dengan bobot ternormalisasi.`}
+  lead={`${matrix.input.alternatives.length} alternatif, ${criteria.length} kriteria, ${method.label} dengan bobot ternormalisasi.${method.higherIsBetter === false ? ' Pada metode ini, nilai terkecil adalah alternatif terbaik.' : ''}`}
 >
   <Fragment slot="actions">
     <div class="cluster">
-      <a class="button button--quiet" href="/hitung">Ganti metode</a>
+      <a class="button button--quiet" href={scenarioField ? '/hitung?skenario=' + scenarioField : '/hitung'}>Ganti metode</a>
       <form method="post" action={actions.runs.save}>
         <input type="hidden" name="method" value={method.id} />
+        <input type="hidden" name="scenarioId" value={scenarioField} />
         <button class="button button--primary" type="submit">Simpan hasil</button>
       </form>
     </div>
@@ -62,12 +81,17 @@ const numericFrom = 1;
 
     <section class="panel">
       <div class="panel__head">
-        <h2 class="panel__title">Peringkat akhir {method.label}</h2>
+        <h2 class="panel__title" id="tabel-peringkat">Peringkat akhir {method.label}</h2>
+        <p class="panel__meta">
+          {matrix.weightSource.source === 'scenario'
+            ? 'Bobot skenario ' + matrix.weightSource.scenarioName
+            : 'Bobot kriteria'}
+        </p>
         <p class="panel__meta">{ranking.length} alternatif</p>
       </div>
       <div class="panel__body panel__body--flush">
         <div class="table-wrap">
-          <table class="data-table">
+          <table class="data-table" aria-labelledby="tabel-peringkat">
             <thead>
               <tr>
                 <th scope="col" class="num">Peringkat</th>

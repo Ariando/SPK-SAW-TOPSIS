@@ -1,0 +1,364 @@
+---
+import App from '../../layouts/App.astro';
+import { db } from '../../lib/guard';
+import { methods } from '../../lib/dss/registry';
+import { runSensitivity, listScenarioOptions } from '../../lib/dss/sensitivity-run';
+import { formatNumber } from '../../lib/format';
+
+const params = Astro.url.searchParams;
+
+const methodParam = params.get('metode') ?? 'saw';
+const deltaParam = Number(params.get('delta') ?? '0.1');
+const scenarioParam = params.get('skenario');
+const scenarioId = scenarioParam ? Number(scenarioParam) : null;
+const includeEqual = params.get('merata') !== '0';
+
+// Delta dibatasi agar tetap masuk akal: di atas 0,5 bobot satu kriteria
+// nyaris berlipat atau hilang, dan tafsirannya mulai kehilangan makna.
+const delta = Number.isFinite(deltaParam) && deltaParam > 0 && deltaParam < 1 ? deltaParam : 0.1;
+
+const scenarioOptions = await listScenarioOptions(db);
+
+const outcome = await runSensitivity(db, {
+  methodId: methodParam,
+  delta,
+  scenarioId,
+  includeEqualWeights: includeEqual,
+});
+
+const methodList = methods.filter((m) => m.inputMode === 'matrix');
+
+const payload = outcome.ok ? outcome.payload : null;
+const heat = outcome.ok ? outcome.matrix : null;
+const origin = outcome.ok ? outcome.weightOrigin : null;
+
+const deltaOptions = [0.05, 0.1, 0.2, 0.3, 0.5];
+
+const cellClass = (value: number, max: number) => {
+  if (value === 0) return 'heat-0';
+  if (max === 0) return 'heat-0';
+  const ratio = value / max;
+  if (ratio >= 0.99) return 'heat-3';
+  if (ratio >= 0.5) return 'heat-2';
+  return 'heat-1';
+};
+
+// Tautan PDF harus membawa parameter analisis yang sedang tampil, supaya
+// berkas yang diunduh sama dengan yang terlihat di layar. Parameter yang tidak
+// relevan tidak ikut ditulis agar tautannya tetap pendek dan dapat dibaca.
+const pdfQuery = new URLSearchParams();
+pdfQuery.set('metode', methodParam);
+pdfQuery.set('delta', String(delta));
+if (scenarioId !== null) pdfQuery.set('skenario', String(scenarioId));
+if (!includeEqual) pdfQuery.set('merata', '0');
+
+const pdfHref = '/api/pdf?halaman=' + encodeURIComponent('/sensitivitas?' + pdfQuery.toString());
+---
+
+<App
+  title="Analisis sensitivitas"
+  page="Sensitivitas"
+  lead="Menguji apakah peringkat berubah ketika bobot kriteria digeser. Satu kriteria digeser pada satu waktu, lalu bobot dinormalkan ulang."
+>
+  <Fragment slot="actions">
+    <div class="cluster">
+      <a class="button button--quiet" href="/hitung">Buka halaman hitung</a>
+      <a class="button" href={pdfHref} target="_blank" rel="noopener">Unduh PDF</a>
+    </div>
+  </Fragment>
+
+  <div class="stack">
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title" id="form-sensitivitas">Pengaturan analisis</h2>
+      </div>
+      <div class="panel__body">
+        <form method="get" action="/sensitivitas" class="stack">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label" for="metode">Metode</label>
+              <select class="select" id="metode" name="metode">
+                {methodList.map((m) => (
+                  <option value={m.id} selected={m.id === methodParam}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="delta">Besar geseran</label>
+              <select class="select" id="delta" name="delta">
+                {deltaOptions.map((d) => (
+                  <option value={String(d)} selected={Math.abs(d - delta) < 1e-9}>
+                    {formatNumber(d * 100, 0)} persen
+                  </option>
+                ))}
+              </select>
+              <p class="field__hint">Berlaku naik dan turun untuk setiap kriteria.</p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="skenario">Sumber bobot</label>
+              <select class="select" id="skenario" name="skenario">
+                <option value="" selected={scenarioId === null}>Bobot kriteria</option>
+                {scenarioOptions.map((o) => (
+                  <option value={o.id} selected={scenarioId === o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="merata">Bobot merata</label>
+              <select class="select" id="merata" name="merata">
+                <option value="1" selected={includeEqual}>Sertakan sebagai pembanding</option>
+                <option value="0" selected={!includeEqual}>Tidak disertakan</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="button button--primary" type="submit">Jalankan analisis</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    {!outcome.ok && (
+      <div class="notice notice--error" role="alert">
+        <span class="notice__title">Analisis tidak dapat dijalankan</span>
+        {outcome.message}
+      </div>
+    )}
+
+    {payload && (
+      <>
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title">Ringkasan</h2>
+            <p class="panel__meta">
+              {payload.methodLabel} · geseran {formatNumber(payload.delta * 100, 0)} persen
+            </p>
+          </div>
+          <div class="panel__body">
+            <p class="muted small">
+              Bobot dari {origin?.source === 'scenario' ? 'skenario ' + origin.scenarioName : 'master kriteria'}.
+              {payload.perturbations.length} skenario perturbasi dijalankan, masing-masing satu kriteria digeser.
+            </p>
+
+            <div class="stat-row mt-4">
+              <div class="stat">
+                <span class="stat__label">Stabilitas peringkat 1</span>
+                <p class="stat__value">{formatNumber(payload.summary.topStability * 100, 0)}%</p>
+                <span class="muted small">
+                  {payload.summary.withTopChange} dari {payload.summary.totalPerturbations} mengubah juara
+                </span>
+              </div>
+              <div class="stat">
+                <span class="stat__label">Perturbasi yang mengubah urutan</span>
+                <p class="stat__value">{payload.summary.withRankChange}</p>
+                <span class="muted small">dari {payload.summary.totalPerturbations}</span>
+              </div>
+              <div class="stat">
+                <span class="stat__label">Kriteria paling berpengaruh</span>
+                <p class="stat__value">
+                  {payload.summary.mostInfluentialCriterion ?? '-'}
+                </p>
+                <span class="muted small">paling sering menggeser urutan</span>
+              </div>
+              <div class="stat">
+                <span class="stat__label">Alternatif paling sensitif</span>
+                <p class="stat__value">
+                  {payload.summary.mostSensitiveAlternative ?? '-'}
+                </p>
+                <span class="muted small">paling sering berubah peringkat</span>
+              </div>
+            </div>
+
+            {payload.warnings.map((w) => (
+              <p class="notice notice--warning mt-4" role="status">{w}</p>
+            ))}
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title" id="tabel-dasar">Peringkat dasar</h2>
+            <p class="panel__meta">Bobot sebelum digeser</p>
+          </div>
+          <div class="panel__body panel__body--flush">
+            <div class="table-wrap">
+              <table class="data-table" aria-labelledby="tabel-dasar">
+                <thead>
+                  <tr>
+                    <th scope="col" class="num">Peringkat</th>
+                    <th scope="col">Alternatif</th>
+                    <th scope="col" class="num">Nilai</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payload.baseline.rows
+                    .slice()
+                    .sort((a, b) => a.rank - b.rank)
+                    .map((row) => (
+                      <tr>
+                        <td class="num">
+                          <span class:list={['rank-badge', { 'rank-badge--top': row.rank === 1 }]}>{row.rank}</span>
+                        </td>
+                        <td><span class="matrix-tag">{row.code}</span></td>
+                        <td class="num">{formatNumber(row.value, 6)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {heat && (
+          <section class="panel">
+            <div class="panel__head">
+              <h2 class="panel__title" id="tabel-heatmap">Peta perubahan peringkat</h2>
+              <p class="panel__meta">Angka = jumlah perturbasi yang mengubah peringkat</p>
+            </div>
+            <div class="panel__body panel__body--flush">
+              <div class="table-wrap">
+                <table class="data-table heat-table" aria-labelledby="tabel-heatmap">
+                  <caption>
+                    Baris adalah kriteria yang digeser, kolom adalah alternatif. Nilai 0 berarti peringkat alternatif itu
+                    tidak berubah pada kedua arah geseran. Nilai 2 berarti berubah pada geseran naik maupun turun.
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Kriteria</th>
+                      {heat.alternatives.map((code) => (
+                        <th scope="col" class="num">{code}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {heat.criteria.map((code, i) => (
+                      <tr>
+                        <th scope="row"><span class="matrix-tag">{code}</span></th>
+                        {heat.counts[i].map((value) => (
+                          <td class:list={['num', 'heat-cell', cellClass(value, heat.max)]}>{value}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title" id="tabel-perturbasi">Rincian perturbasi</h2>
+            <p class="panel__meta">{payload.perturbations.length} skenario</p>
+          </div>
+          <div class="panel__body panel__body--flush">
+            <div class="table-wrap">
+              <table class="data-table" aria-labelledby="tabel-perturbasi">
+                <thead>
+                  <tr>
+                    <th scope="col">Kriteria</th>
+                    <th scope="col">Arah</th>
+                    <th scope="col" class="num">Bobot kriteria</th>
+                    <th scope="col">Peringkat berubah</th>
+                    <th scope="col">Juara berganti</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payload.perturbations.map((p) => (
+                    <tr>
+                      <td><span class="matrix-tag">{p.criterionCode}</span></td>
+                      <td>{p.direction === 'increase' ? 'naik' : 'turun'}</td>
+                      <td class="num">{formatNumber(p.criterionWeight, 4)}</td>
+                      <td>{p.changedCodes.length === 0 ? 'tidak ada' : p.changedCodes.join(', ')}</td>
+                      <td>{p.topChanged ? 'ya' : 'tidak'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {payload.equalWeights && (
+          <section class="panel">
+            <div class="panel__head">
+              <h2 class="panel__title" id="tabel-merata">Pembanding: bobot merata</h2>
+              <p class="panel__meta">
+                {payload.equalWeights.changedCodes.length === 0 ? 'peringkat sama' : 'peringkat berubah'}
+              </p>
+            </div>
+            <div class="panel__body panel__body--flush">
+              <div class="table-wrap">
+                <table class="data-table" aria-labelledby="tabel-merata">
+                  <caption>
+                    Semua kriteria diberi bobot sama besar. Berguna sebagai pemeriksaan: bila hasil berubah drastis,
+                    kesimpulan sangat bergantung pada bobot yang dipilih.
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Alternatif</th>
+                      <th scope="col" class="num">Peringkat dasar</th>
+                      <th scope="col" class="num">Peringkat merata</th>
+                      <th scope="col" class="num">Selisih</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payload.equalWeights.rows
+                      .slice()
+                      .sort((a, b) => a.code.localeCompare(b.code))
+                      .map((row) => {
+                        const base = payload.baseline.rows.find((b) => b.code === row.code);
+                        return (
+                          <tr>
+                            <td><span class="matrix-tag">{row.code}</span></td>
+                            <td class="num">{base?.rank ?? '-'}</td>
+                            <td class="num">{row.rank}</td>
+                            <td class="num">{row.shift === 0 ? '0' : row.shift > 0 ? '+' + row.shift : String(row.shift)}</td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        )}
+      </>
+    )}
+  </div>
+</App>
+
+<style>
+  .heat-table .heat-cell {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  /* Tiga tingkat intensitas. Angka tetap terbaca karena latar paling gelap
+     masih memberi kontras di atas 4,5:1 terhadap teks. */
+  .heat-0 {
+    background: var(--surface);
+    color: var(--ink-faint);
+  }
+
+  .heat-1 {
+    background: #ecebf7;
+    color: #23255f;
+  }
+
+  .heat-2 {
+    background: #c9c7ea;
+    color: #1b1d2a;
+  }
+
+  .heat-3 {
+    background: #2f318b;
+    color: #ffffff;
+  }
+</style>

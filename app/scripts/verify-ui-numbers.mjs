@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
+import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
 const base = process.env.VERIFY_BASE ?? 'http://localhost:4321';
 const fixture = JSON.parse(
   fs.readFileSync(new URL('../../docs/reference/dataset-demo-f0.json', import.meta.url), 'utf8')
@@ -75,7 +76,7 @@ const fetchWithJar = async (path, options = {}) => {
 const login = await fetchWithJar('/api/auth/sign-in/username', {
   method: 'POST',
   headers: { 'content-type': 'application/json', origin: base },
-  body: JSON.stringify({ username: 'admin', password: 'TelaahAdmin2026' }),
+  body: JSON.stringify({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD }),
 });
 if (login.status !== 200) {
   console.log('login gagal: ' + login.status);
