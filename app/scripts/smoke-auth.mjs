@@ -3,7 +3,7 @@
 // Dijalankan: node scripts/smoke-auth.mjs [baseUrl]
 
 import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
-const base = process.argv[2] ?? 'http://localhost:4321';
+const base = process.argv[2] ?? 'http://localhost:1111';
 
 const results = [];
 const check = (name, ok, detail = '') => {

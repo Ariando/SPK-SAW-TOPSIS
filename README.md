@@ -22,7 +22,7 @@ npm run db:setup
 npm run dev
 ```
 
-Aplikasi terbuka di `http://localhost:4321`.
+Aplikasi terbuka di `http://localhost:1111`.
 
 Prasyarat: Node.js 22 atau lebih baru, dan MySQL 8. Untuk Docker:
 

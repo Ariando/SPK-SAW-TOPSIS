@@ -9,7 +9,7 @@ import { createDatabase, createPool } from '../src/db/factory.ts';
 import { loadMatrixCore, loadWeightOptionsCore } from '../src/lib/matrix-core.ts';
 import { hashSnapshotData } from '../src/lib/snapshot.ts';
 
-const base = process.env.VERIFY_BASE ?? 'http://localhost:4321';
+const base = process.env.VERIFY_BASE ?? 'http://localhost:1111';
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL belum diisi');
 

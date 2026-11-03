@@ -7,7 +7,7 @@ import { createUserAccount } from '../src/lib/user-service';
 
 const databaseUrl = process.env.DATABASE_URL;
 const secret = process.env.BETTER_AUTH_SECRET;
-const baseUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:4321';
+const baseUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:1111';
 
 if (!databaseUrl) throw new Error('DATABASE_URL belum diisi');
 if (!secret) throw new Error('BETTER_AUTH_SECRET belum diisi');

@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import 'dotenv/config';
 import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
 
-const base = process.env.VERIFY_BASE ?? 'http://localhost:4321';
+const base = process.env.VERIFY_BASE ?? 'http://localhost:1111';
 
 const results = [];
 const check = (name, ok, detail = '') => {

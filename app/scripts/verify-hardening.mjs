@@ -7,7 +7,7 @@ import mysql from 'mysql2/promise';
 import 'dotenv/config';
 import { ADMIN_USERNAME, ADMIN_PASSWORD, VIEWER_USERNAME, VIEWER_PASSWORD } from './test-credentials.mjs';
 
-const base = process.env.VERIFY_BASE ?? 'http://localhost:4321';
+const base = process.env.VERIFY_BASE ?? 'http://localhost:1111';
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL belum diisi');
 

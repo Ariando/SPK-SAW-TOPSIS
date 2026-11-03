@@ -46,7 +46,7 @@ Dibangun dengan Astro 7, MySQL 8, Drizzle ORM, dan better-auth.
    npm run dev
    ```
 
-   Aplikasi tersedia di `http://localhost:4321`.
+   Aplikasi tersedia di `http://localhost:1111`.
 
 ## Perintah
 

@@ -10,7 +10,7 @@ import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
 import { createDatabase, createPool } from '../src/db/factory.ts';
 import { compareLatestRuns } from '../src/lib/comparison.ts';
 
-const base = process.env.VERIFY_BASE ?? 'http://localhost:4321';
+const base = process.env.VERIFY_BASE ?? 'http://localhost:1111';
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL belum diisi');
 

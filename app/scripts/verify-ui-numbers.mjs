@@ -7,7 +7,7 @@ import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
 import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
-const base = process.env.VERIFY_BASE ?? 'http://localhost:4321';
+const base = process.env.VERIFY_BASE ?? 'http://localhost:1111';
 const fixture = JSON.parse(
   fs.readFileSync(new URL('../../docs/reference/dataset-demo-f0.json', import.meta.url), 'utf8')
 );

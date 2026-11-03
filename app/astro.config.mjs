@@ -2,7 +2,7 @@
 import { defineConfig, envField } from 'astro/config';
 import node from '@astrojs/node';
 
-const port = Number(process.env.PORT ?? 4321);
+const port = Number(process.env.PORT ?? 1111);
 
 export default defineConfig({
   output: 'server',

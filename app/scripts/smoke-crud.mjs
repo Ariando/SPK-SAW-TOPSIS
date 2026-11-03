@@ -3,7 +3,7 @@
 // Prasyarat: dev server berjalan, database sudah dimigrasi dan di-seed.
 
 import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
-const base = process.argv[2] ?? 'http://localhost:4321';
+const base = process.argv[2] ?? 'http://localhost:1111';
 const jar = new Map();
 
 const store = (response) => {

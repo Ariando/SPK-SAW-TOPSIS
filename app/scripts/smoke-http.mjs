@@ -3,7 +3,7 @@
 // Tidak memakai pustaka eksternal. Menyimpan cookie sesi antar permintaan.
 
 import { ADMIN_USERNAME, ADMIN_PASSWORD } from './test-credentials.mjs';
-const base = process.argv[2] ?? 'http://localhost:4321';
+const base = process.argv[2] ?? 'http://localhost:1111';
 const jar = new Map();
 
 function cookieHeader() {
